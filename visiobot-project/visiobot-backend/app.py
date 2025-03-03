@@ -3,34 +3,30 @@ import click
 import model_utils
 import dataset_utils
 import gpt_gateway
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import secrets
-from flask_session import Session  
 
 app = Flask(__name__)
 
-# ✅ Set a secure session key
-app.secret_key = secrets.token_hex(32)  # Generates a new secure key each time
+# ✅ Secure Key (Not needed for global dictionary, but kept for consistency)
+app.secret_key = secrets.token_hex(32)
 
-# ✅ Configure session storage
-app.config["SESSION_TYPE"] = "filesystem"
-app.config["SESSION_PERMANENT"] = True  # ✅ Keep session active
-app.config["SESSION_USE_SIGNER"] = True  # ✅ Protect against tampering
-app.config["SESSION_FILE_DIR"] = "./flask_session_data"  
-app.config["SESSION_COOKIE_NAME"] = "visiobot_session"  # ✅ Unique session name
-app.config["SESSION_COOKIE_HTTPONLY"] = False  # ✅ Allows JavaScript to access it
-app.config["SESSION_COOKIE_SAMESITE"] = "None"  # ✅ Fix CORS session issues
-app.config["SESSION_COOKIE_SECURE"] = True  # ✅ Set to True if using HTTPS
-Session(app)  
+# ✅ Configure CORS
+CORS(app, resources={r"/*": {"origins": "*"}}, allow_headers=["Content-Type", "Authorization"], supports_credentials=True)
+
+# ✅ Global dictionary to store dataset info (replaces Flask session)
+global_data = {
+    "dataset_info": None,
+    "dataset_uploaded": False,
+    "dataset_path": None
+}
 
 # ✅ Ensure directories exist
 UPLOAD_FOLDER = "/workspaces/codespaces-models/visiobot-project/visiobot-backend/uploads"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
-os.makedirs(app.config["SESSION_FILE_DIR"], exist_ok=True)
 
-CORS(app, resources={r"/*": {"origins": "*"}}, allow_headers=["Content-Type", "Authorization"], supports_credentials=True)
 
 @app.route("/", methods=["GET"])
 def home():
@@ -43,10 +39,11 @@ def home():
         }
     }), 200
 
-# ✅ Route 1: Upload Dataset
+
+# ✅ Route 1: Upload Dataset (Uses global dictionary)
 @app.route("/process-dataset", methods=["POST"])
 def process_dataset():
-    """Handles dataset upload, saves it to a fixed location, and stores path in session."""
+    """Handles dataset upload, saves it to a fixed location, and stores path in global_data."""
     if "file" not in request.files:
         return jsonify({"error": "No file provided"}), 400
 
@@ -59,17 +56,14 @@ def process_dataset():
 
     try:
         dataset_info = dataset_utils.extract_dataset_info(file_path)
-        
-        # ✅ Store dataset info & file path in session
-        session["dataset_info"] = dataset_info  
-        session["dataset_uploaded"] = True
-        session["dataset_path"] = file_path  
 
-        session.modified = True  # ✅ Forces Flask to save session data
-
+        # ✅ Store dataset info in global dictionary
+        global_data["dataset_info"] = dataset_info
+        global_data["dataset_uploaded"] = True
+        global_data["dataset_path"] = file_path
 
         print(f"✅ Dataset saved at: {file_path}")
-        print("✅ Dataset info stored in session:", session["dataset_info"])
+        print("✅ Dataset info stored:", global_data["dataset_info"])
 
     except Exception as e:
         return jsonify({"error": f"Dataset processing failed: {str(e)}"}), 500
@@ -79,36 +73,34 @@ def process_dataset():
         "dataset_details": dataset_info
     })
 
-# ✅ Route 2: Get Visualization
+
+# ✅ Route 2: Get Visualization (Uses global dictionary)
 @app.route("/get-visualization", methods=["POST"])
 def get_visualization():
-    """Retrieves dataset from session, combines it with user input, and sends it to the model."""
+    """Retrieves dataset from global_data, combines it with user input, and sends it to the model."""
     data = request.json
 
-    # ✅ Check if session contains dataset info
-    print("🔎 Checking session for dataset info...")
+    print("🔎 Checking global_data for dataset info...")
 
-    
+    if not global_data["dataset_uploaded"]:
+        print("❌ Dataset not found in global_data!")
+        return jsonify({"error": "❌ No dataset uploaded. Please upload a dataset first."}), 400
 
-    dataset_info = session.get("dataset_info", {})
-    dataset_path = session.get("dataset_path", None)
+    dataset_info = global_data["dataset_info"]
+    dataset_path = global_data["dataset_path"]
 
     print("✅ Retrieved dataset info:", dataset_info)
     print("✅ Retrieved dataset path:", dataset_path)
 
-    if not session.get("dataset_uploaded"):
-        print("❌ Dataset not found in session!")
-        return jsonify({"error": "❌ No dataset uploaded. Please upload a dataset first."}), 400
-    
     if dataset_path is None:
-        return jsonify({"error": "Dataset path not found in session. Please re-upload."}), 400
+        return jsonify({"error": "Dataset path not found. Please re-upload."}), 400
 
     required_fields = ["Task (Purpose)", "Target Audience"]
     if not all(field in data for field in required_fields):
         return jsonify({"error": "Missing required fields: Task (Purpose) and Target Audience"}), 400
 
     try:
-        # Merge extracted dataset info with user inputs
+        # Merge dataset info with user inputs
         processed_data = {
             "Data_Dimensions": dataset_info["Data_Dimensions"],
             "No_of_Attributes": dataset_info["No_of_Attributes"],
@@ -116,7 +108,7 @@ def get_visualization():
             "Primary_Variable (Data Type)": dataset_info["Primary_Variable (Data Type)"],
             "Task (Purpose)": str(data["Task (Purpose)"]).lower(),
             "Target Audience": 1 if data["Target Audience"] == 1 else 0,
-            "Dataset Path": dataset_path  # ✅ Pass dataset file path for further processing if needed
+            "Dataset Path": dataset_path
         }
 
         print("📊 Processed data for model:", processed_data)
@@ -135,6 +127,8 @@ def get_visualization():
     except Exception as e:
         return jsonify({"error": f"Model prediction failed: {str(e)}"}), 500
 
+
+# ✅ Route 3: Chatbot Responses
 @app.route("/chat", methods=["POST"])
 def chat():
     """Guides the user through the visualization recommendation process."""
@@ -154,6 +148,7 @@ def chat():
 
     else:
         return jsonify({"response": "I can guide you through the process, but I won't generate a recommendation myself. Let's start by uploading your dataset."})
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
