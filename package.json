@@ -8,6 +8,8 @@
     "@azure/core-auth": "^1.7.2",
     "@azure/core-sse": "^2.1.2",
     "@mistralai/mistralai": "^0.5.0",
-    "openai": "^4.52.7"
+    "axios": "^1.7.9",
+    "openai": "^4.85.4",
+    "react-chatbot-kit": "^2.2.2"
   }
 }
