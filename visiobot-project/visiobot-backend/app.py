@@ -8,21 +8,13 @@ from flask_cors import CORS
 import secrets
 
 app = Flask(__name__)
-
-# ✅ Secure Key (Not needed for global dictionary, but kept for consistency)
 app.secret_key = secrets.token_hex(32)
-
-# ✅ Configure CORS
 CORS(app, resources={r"/*": {"origins": "*"}}, allow_headers=["Content-Type", "Authorization"], supports_credentials=True)
-
-# ✅ Global dictionary to store dataset info (replaces Flask session)
 global_data = {
     "dataset_info": None,
     "dataset_uploaded": False,
     "dataset_path": None
 }
-
-# ✅ Ensure directories exist
 UPLOAD_FOLDER = "/workspaces/codespaces-models/visiobot-project/visiobot-backend/uploads"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
@@ -40,7 +32,6 @@ def home():
     }), 200
 
 
-# ✅ Route 1: Upload Dataset (Uses global dictionary)
 @app.route("/process-dataset", methods=["POST"])
 def process_dataset():
     """Handles dataset upload, saves it to a fixed location, and stores path in global_data."""
@@ -57,7 +48,6 @@ def process_dataset():
     try:
         dataset_info = dataset_utils.extract_dataset_info(file_path)
 
-        # ✅ Store dataset info in global dictionary
         global_data["dataset_info"] = dataset_info
         global_data["dataset_uploaded"] = True
         global_data["dataset_path"] = file_path
@@ -73,8 +63,6 @@ def process_dataset():
         "dataset_details": dataset_info
     })
 
-
-# ✅ Route 2: Get Visualization (Uses global dictionary)
 @app.route("/get-visualization", methods=["POST"])
 def get_visualization():
     """Retrieves dataset from global_data, combines it with user input, and sends it to the model."""
@@ -100,7 +88,6 @@ def get_visualization():
         return jsonify({"error": "Missing required fields: Task (Purpose) and Target Audience"}), 400
 
     try:
-        # Merge dataset info with user inputs
         processed_data = {
             "Data_Dimensions": dataset_info["Data_Dimensions"],
             "No_of_Attributes": dataset_info["No_of_Attributes"],
@@ -127,8 +114,6 @@ def get_visualization():
     except Exception as e:
         return jsonify({"error": f"Model prediction failed: {str(e)}"}), 500
 
-
-# ✅ Route 3: Chatbot Responses
 @app.route("/chat", methods=["POST"])
 def chat():
     """Guides the user through the visualization recommendation process."""

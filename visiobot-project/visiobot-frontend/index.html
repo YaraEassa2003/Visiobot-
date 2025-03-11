@@ -28,7 +28,6 @@
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
         }
 
-        /* HEADER WITH LOGO */
         #chat-header {
             display: flex;
             align-items: center;
@@ -37,12 +36,12 @@
         }
         
         #logo {
-    width: 100px; /* Increase size for better visibility */
-    height: auto; /* Maintain aspect ratio */
+    width: 100px; 
+    height: auto; 
     margin-right: 10px;
-    background: none; /* Remove unwanted background */
-    padding: 0; /* Remove padding */
-    border-radius: 0; /* Remove unnecessary rounding */
+    background: none;
+    padding: 0; 
+    border-radius: 0;
 }
 
 
@@ -60,32 +59,28 @@
             background-color: #0d1b2a;
             color: #fff;
             scrollbar-width: thin;
-            scrollbar-color: #3b5278 #0d1b2a; /* Lighter scrollbar */
+            scrollbar-color: #3b5278 #0d1b2a; 
             display: flex;
             flex-direction: column;
             align-items: flex-start; 
         }
 
-       /* Custom scrollbar */
 #chatbox::-webkit-scrollbar {
     width: 6px;
-    border-radius: 10px; /* Ensures scrollbar edges are rounded */
+    border-radius: 10px; 
 }
 
-/* Scrollbar track (background behind the scroll) */
 #chatbox::-webkit-scrollbar-track {
-    background-color: #0d1b2a !important; /* Match chatbox background */
-    border-radius: 10px !important; /* Curves edges */
+    background-color: #0d1b2a !important; 
+    border-radius: 10px !important; 
 }
 
-/* Scrollbar thumb (the draggable part) */
 #chatbox::-webkit-scrollbar-thumb {
     background: #6895a9 !important;
-    border-radius: 10px !important; /* Fully round scrollbar thumb */
+    border-radius: 10px !important; 
     min-height: 20px;
 }
 
-/* Scrollbar corners (for browsers that support it) */
 #chatbox::-webkit-scrollbar-corner {
     background: #0d1b2a !important;
 }
@@ -99,7 +94,6 @@
             font-weight: bold;
         }
 
-        /* INPUT AREA */
         #input-area {
             display: flex;
             align-items: center;
@@ -129,7 +123,7 @@
     background-color: #6895a9;
     color: white;
     border: none;
-    width: 45px; /* Adjust for better centering */
+    width: 45px; 
     height: 45px;
     display: flex;
     align-items: center;
@@ -137,10 +131,10 @@
     border-radius: 50%;
     cursor: pointer;
     margin-left: 10px;
-    font-size: 20px; /* Ensures the icon is centered */
+    font-size: 20px; 
     transition: background-color 0.2s ease-in-out;
-    padding: 0; /* Remove extra padding */
-    line-height: 1; /* Adjust line height */
+    padding: 0; 
+    line-height: 1; 
 }
 
 button:hover {
@@ -148,18 +142,16 @@ button:hover {
 }
 
 button:active {
-    transform: scale(0.9); /* Add click effect */
+    transform: scale(0.9); 
 }
 
 
-
-        /* FILE UPLOAD BUTTON */
         #file-upload {
             display: none;
         }
         .user-message, .bot-message {
     display: inline-block;
-    background-color: #1E3A5F; /* User */
+    background-color: #1E3A5F; 
     color: white;
     padding: 8px 12px;
     border-radius: 12px;
@@ -167,11 +159,11 @@ button:active {
     word-wrap: break-word;
     white-space: normal;
     text-align: left;
-    margin: 6px 5px; /* ✅ Increase spacing between messages */
+    margin: 6px 5px; 
 }
 
 .bot-message {
-    background-color: #14213d; /* Bot */
+    background-color: #14213d; 
     align-self: flex-start;
 }
 
@@ -182,10 +174,10 @@ button:active {
 .error-message {
     color: red;
     font-weight: bold;
-    text-align: center; /* Center horizontally */
+    text-align: center; 
     display: flex;
     justify-content: center;
-    width: 100%; /* Ensure it takes full width */
+    width: 100%;
     margin-top: 10px;
 }
 
@@ -224,11 +216,11 @@ button:active {
     align-items: center;
         }
                 #intro-message p {
-            margin-bottom: 5px; /* Reduce space between lines */
+            margin-bottom: 5px;
         }
 
         #intro-message p:last-child {
-            margin-top: 10px; /* Reduce gap above "Type 'Hello'" */
+            margin-top: 10px; 
         }
 
 
@@ -271,22 +263,22 @@ button:active {
 
         document.getElementById("userInput").addEventListener("keypress", function(event) {
     if (event.key === "Enter") {  
-        event.preventDefault();  // ✅ Prevent form submission
-        sendMessage();  // ✅ Trigger send message
+        event.preventDefault();  
+        sendMessage(); 
     }
 });
 
 async function sendMessage() {
-    let userInput = document.getElementById("userInput").value.trim(); // ✅ Ensure userInput is correctly retrieved
+    let userInput = document.getElementById("userInput").value.trim();
     let chatbox = document.getElementById("chatbox");
 
     if (!userInput) return;
 
     chatbox.innerHTML += `<p class="user-message">${userInput}</p>`;
-    document.getElementById("userInput").value = "";  // ✅ Clear input after sending
+    document.getElementById("userInput").value = "";  
 
     if (!datasetUploaded) {
-        chatbox.innerHTML += `<p class="error-message">❌ No dataset uploaded. Please upload a dataset first.</p>`;
+        chatbox.innerHTML += `<p class="error-message">No dataset uploaded. Please upload a dataset first.</p>`;
         return;
     }
 
@@ -346,15 +338,14 @@ document.getElementById("file-upload").addEventListener("change", async function
         let response = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/process-dataset", {
             method: "POST",
             body: formData,
-            credentials: "include"  // ✅ Ensures session data is stored
+            credentials: "include"  
         });
 
         let data = await response.json();
         datasetUploaded = true;
         datasetInfo = data.dataset_details;
-        chatbox.innerHTML += `<p class="bot-message">✅ Dataset uploaded successfully!</p>`;
-        chatbox.innerHTML += `<p class="bot-message">What is the purpose of your visualization? (Distribution, Relationship, Comparison, or Trends
-)</p>`;
+        chatbox.innerHTML += `<p class="bot-message">Dataset uploaded successfully!</p>`;
+        chatbox.innerHTML += `<p class="bot-message">What is the purpose of your visualization? (Distribution, Relationship, Comparison, Trends)</p>`;
     } catch (error) {
         chatbox.innerHTML += `<p class="error-message">Error: Dataset upload failed!</p>`;
         console.error("Upload error:", error);

@@ -30,7 +30,7 @@ def detect_primary_variable(df):
         dtype = df[col].dtype
 
         if pd.api.types.is_numeric_dtype(df[col]):
-            if unique_values < 10:  # Arbitrary threshold for ordinal classification
+            if unique_values < 10:  
                 feature_types[col] = "ordinal"
             else:
                 feature_types[col] = "continuous"
@@ -44,7 +44,6 @@ def detect_primary_variable(df):
         else:
             feature_types[col] = "other"
 
-    # Select the primary variable (most relevant feature based on type frequency)
     primary_variable = max(feature_types, key=lambda x: df[x].nunique(), default=None)
     return primary_variable, feature_types.get(primary_variable, "unknown")
 
@@ -52,18 +51,15 @@ def extract_dataset_info(file_path):
     """Extracts dataset properties as required by the trained model."""
     df = pd.read_csv(file_path)
 
-    # Determine Data Dimensions using determine_dimension()
     data_dimensions = determine_dimension(df.to_numpy())
 
-    # Detect primary variable
     primary_variable, primary_variable_type = detect_primary_variable(df)
 
-    # Ensure the extracted properties match the exact order expected by the model
     dataset_info = {
-        "Data_Dimensions": data_dimensions,  # Matches model input field
-        "No_of_Attributes": df.shape[1],  # Matches model input field
-        "No_of_Records": df.shape[0],  # Matches model input field
-        "Primary_Variable (Data Type)": primary_variable_type,  # Matches model input field
+        "Data_Dimensions": data_dimensions,
+        "No_of_Attributes": df.shape[1],  
+        "No_of_Records": df.shape[0],  
+        "Primary_Variable (Data Type)": primary_variable_type,  
     }
 
     return dataset_info
