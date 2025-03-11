@@ -94,7 +94,7 @@ def get_visualization():
             "No_of_Records": dataset_info["No_of_Records"],
             "Primary_Variable (Data Type)": dataset_info["Primary_Variable (Data Type)"],
             "Task (Purpose)": str(data["Task (Purpose)"]).lower(),
-            "Target Audience": 1 if data["Target Audience"] == 1 else 0,
+            "Target Audience": "Expert" if data["Target Audience"] == 1 else "Non-Expert",
             "Dataset Path": dataset_path
         }
 

@@ -26,15 +26,14 @@ one_hot_columns = preprocessing_pipeline["one_hot_columns"]
 
 chart_type_mapping = {
     1: "Histogram",
-    2: "Pie Chart",
-    3: "Map",
-    4: "Treemap",
+    2: "Line Chart",
+    3: "Linked Graph",
+    4: "Map",
     5: "Parallel Coordinates",
-    6: "Scatter Plot",
-    7: "Linked Graph",
-    8: "Line Chart"
+    6: "Pie Chart",
+    7: "Scatter Plot",
+    8: "Treemap"
 }
-
 
 
 def preprocess_input(user_input):
@@ -183,21 +182,21 @@ def get_explanation(prediction, user_input):
 
 # Define test cases
 test_cases = [
-    {
+    { #0
         "Data_Dimensions": "1D",
         "No_of_Attributes": 1,
         "No_of_Records": 50,
-        "Primary_Variable (Data Type)": "continous",
+        "Primary_Variable (Data Type)": "continuous",
         "Task (Purpose)": "distribution",
-        "Target Audience": 0
+        "Target Audience": "Non-Expert"
     },
-    {
+    { #1
         "Data_Dimensions": "1D",
         "No_of_Attributes": 1,
         "No_of_Records": 20,
         "Primary_Variable (Data Type)": "categorical",
         "Task (Purpose)": "distribution",
-        "Target Audience": 0
+        "Target Audience": "Non-Expert"
     },
     {
         "Data_Dimensions": "Hierarchical",
@@ -205,16 +204,15 @@ test_cases = [
         "No_of_Records": 500,
         "Primary_Variable (Data Type)": "categorical",
         "Task (Purpose)": "trends",
-        "Target Audience": 1
+        "Target Audience": "Expert"
     },
-
     {
         "Data_Dimensions": "1D",
         "No_of_Attributes": 2,
         "No_of_Records": 150,
-        "Primary_Variable (Data Type)": "continous",
+        "Primary_Variable (Data Type)": "continuous",
         "Task (Purpose)": "distribution",
-        "Target Audience": 0
+        "Target Audience": "Non-Expert"
     },
     {
         "Data_Dimensions": "ND",
@@ -222,7 +220,7 @@ test_cases = [
         "No_of_Records": 600,
         "Primary_Variable (Data Type)": "categorical",
         "Task (Purpose)": "comparison",
-        "Target Audience": 1
+        "Target Audience": "Expert"
     },
     {
         "Data_Dimensions": "Hierarchical",
@@ -230,7 +228,7 @@ test_cases = [
         "No_of_Records": 750,
         "Primary_Variable (Data Type)": "geographical",
         "Task (Purpose)": "relationship",
-        "Target Audience": 0
+        "Target Audience": "Non-Expert"
     },
     {
         "Data_Dimensions": "2D",
@@ -238,23 +236,23 @@ test_cases = [
         "No_of_Records": 350,
         "Primary_Variable (Data Type)": "ordinal",
         "Task (Purpose)": "comparison",
-        "Target Audience": 1
+        "Target Audience": "Expert"
     },
     {
         "Data_Dimensions": "ND",
         "No_of_Attributes": 9,
         "No_of_Records": 1100,
-        "Primary_Variable (Data Type)": "continous",
+        "Primary_Variable (Data Type)": "continuous",
         "Task (Purpose)": "relationship",
-        "Target Audience": 1
+        "Target Audience": "Expert"
     },
     {
         "Data_Dimensions": "1D",
         "No_of_Attributes": 3,
         "No_of_Records": 300,
-        "Primary_Variable (Data Type)": "continous",
+        "Primary_Variable (Data Type)": "continuous",
         "Task (Purpose)": "relationship",
-        "Target Audience": 0
+        "Target Audience": "Non-Expert"
     },
     {
         "Data_Dimensions": "Hierarchical",
@@ -262,7 +260,7 @@ test_cases = [
         "No_of_Records": 850,
         "Primary_Variable (Data Type)": "categorical",
         "Task (Purpose)": "trends",
-        "Target Audience": 1
+        "Target Audience": "Expert"
     },
     {
         "Data_Dimensions": "2D",
@@ -270,7 +268,7 @@ test_cases = [
         "No_of_Records": 1300,
         "Primary_Variable (Data Type)": "ordinal",
         "Task (Purpose)": "trends",
-        "Target Audience": 0
+        "Target Audience": "Non-Expert"
     },
     {
         "Data_Dimensions": "1D",
@@ -278,16 +276,15 @@ test_cases = [
         "No_of_Records": 10,
         "Primary_Variable (Data Type)": "categorical",
         "Task (Purpose)": "distribution",
-        "Target Audience": 0
+        "Target Audience": "Non-Expert"
     },  # Expected: Pie Chart
-
     {
         "Data_Dimensions": "Hierarchical",
         "No_of_Attributes": 10,
         "No_of_Records": 5000,
         "Primary_Variable (Data Type)": "geographical",
         "Task (Purpose)": "comparison",
-        "Target Audience": 1
+        "Target Audience": "Expert"
     },
     {
         "Data_Dimensions": "Hierarchical",
@@ -295,7 +292,7 @@ test_cases = [
         "No_of_Records": 2500,
         "Primary_Variable (Data Type)": "ordinal",
         "Task (Purpose)": "comparison",
-        "Target Audience": 0
+        "Target Audience": "Non-Expert"
     },
     {
         "Data_Dimensions": "1D",
@@ -303,7 +300,7 @@ test_cases = [
         "No_of_Records": 9,
         "Primary_Variable (Data Type)": "categorical",
         "Task (Purpose)": "distribution",
-        "Target Audience": 0
+        "Target Audience": "Non-Expert"
     },
     {
         "Data_Dimensions": "2D",
@@ -311,15 +308,15 @@ test_cases = [
         "No_of_Records": 500,
         "Primary_Variable (Data Type)": "ordinal",
         "Task (Purpose)": "relationship",
-        "Target Audience": 1
+        "Target Audience": "Expert"
     },  # Expected: Map
     {
         "Data_Dimensions": "2D",
         "No_of_Attributes": 3,
         "No_of_Records": 300,
-        "Primary_Variable (Data Type)": "continous",
+        "Primary_Variable (Data Type)": "continuous",
         "Task (Purpose)": "trends",
-        "Target Audience": 0
+        "Target Audience": "Non-Expert"
     },
     {
         "Data_Dimensions": "2D",
@@ -327,7 +324,7 @@ test_cases = [
         "No_of_Records": 500,
         "Primary_Variable (Data Type)": "ordinal",
         "Task (Purpose)": "relationship",
-        "Target Audience": 1
+        "Target Audience": "Expert"
     },
     {
         "Data_Dimensions": "1D",
@@ -335,11 +332,28 @@ test_cases = [
         "No_of_Records": 9,
         "Primary_Variable (Data Type)": "categorical",
         "Task (Purpose)": "distribution",
-        "Target Audience": 0
+        "Target Audience": "Non-Expert"
+    },
+
+    {
+        "Data_Dimensions": "1D",
+        "No_of_Attributes": 1,
+        "No_of_Records": 35,
+        "Primary_Variable (Data Type)": "ordinal",
+        "Task (Purpose)": "tredistributionnds",
+        "Target Audience": "Non-Expert"
+    },
+    {
+        "Data_Dimensions": "1D",
+        "No_of_Attributes": 1,
+        "No_of_Records": 60,
+        "Primary_Variable (Data Type)": "geographical",
+        "Task (Purpose)": "distribution",
+        "Target Audience": "Expert"
     }
-
-
 ]
+
+
 
 # Test with predefined test cases
 predictions = []
