@@ -8,29 +8,22 @@ from sklearn.preprocessing import StandardScaler
 import requests
 from dotenv import load_dotenv
 from openai import OpenAI
+import joblib
 
-# Load trained model
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  
 MODEL_PATH = os.path.join(BASE_DIR, "saved_models", "visiobot_model.keras")
+PIPELINE_PATH = os.path.join(BASE_DIR, "saved_models", "preprocessing_pipeline.pkl")
+
+# Load model
 model = tf.keras.models.load_model(MODEL_PATH)
 
-# Load dataset to get correct preprocessing parameters
-dataset_path = os.path.join(BASE_DIR, "modifiedDataset_WithDIM.csv")
-df = pd.read_csv(dataset_path)
+# Load preprocessing pipeline
+preprocessing_pipeline = joblib.load(PIPELINE_PATH)
+scaler = preprocessing_pipeline["scaler"]
+feature_columns = preprocessing_pipeline["feature_columns"]
+one_hot_columns = preprocessing_pipeline["one_hot_columns"]
 
-# Standardize numerical columns based on training values
-numerical_cols = ["No_of_Attributes", "No_of_Records"]
-scaler = StandardScaler()
-df[numerical_cols] = scaler.fit_transform(df[numerical_cols])
-
-# Store mean and scale values for future standardization
-scaler_mean = scaler.mean_
-scaler_scale = scaler.scale_
-
-# One-Hot Encode categorical features based on training
-df = pd.get_dummies(df, columns=['Data_Dimensions', 'Primary_Variable (Data Type)', 'Task (Purpose)', 'Target Audience'], drop_first=True, dtype=int)
-
-# Define visualization class mapping
 chart_type_mapping = {
     1: "Histogram",
     2: "Pie Chart",
@@ -42,70 +35,65 @@ chart_type_mapping = {
     8: "Line Chart"
 }
 
+
+
 def preprocess_input(user_input):
-    """Prepares user input for model prediction by applying one-hot encoding and standardization."""
-    global df  # Use the same structure as the training dataset
+    """Prepares user input using the saved preprocessing pipeline."""
 
-    # Standardize numerical columns
-    standardized_attrs = (np.array([[user_input["No_of_Attributes"], user_input["No_of_Records"]]]) - scaler_mean) / scaler_scale
+    # Standardize numerical values (Ensure both attributes are transformed together)
+    standardized_values = scaler.transform(
+        pd.DataFrame([[user_input["No_of_Attributes"], user_input["No_of_Records"]]],
+                    columns=["No_of_Attributes", "No_of_Records"])
+    )
+    print("Training Mean & Std Dev:", scaler.mean_, scaler.scale_)
 
-    # Create an empty dataframe with the same structure as training data
-    input_df = pd.DataFrame(columns=df.columns)
-    input_df.loc[0] = 0  # Initialize with zeros
+    # Create an empty DataFrame with the correct feature structure
+    input_df = pd.DataFrame(columns=feature_columns)
+    input_df.loc[0] = 0  # Initialize all values to zero
 
-    # Fill numerical values
-    input_df["No_of_Attributes"] = standardized_attrs[0][0]
-    input_df["No_of_Records"] = standardized_attrs[0][1]
+    # Insert standardized numerical values
+    input_df["No_of_Attributes"] = standardized_values[0, 0]
+    input_df["No_of_Records"] = standardized_values[0, 1]
 
-    # One-hot encode categorical values
-    cat_features = ["Data_Dimensions", "Primary_Variable (Data Type)", "Task (Purpose)", "Target Audience"]
-    for feature in cat_features:
+    # Apply One-Hot Encoding using `one_hot_columns` from the pipeline
+    categorical_features = ["Data_Dimensions", "Primary_Variable (Data Type)", "Task (Purpose)", "Target Audience"]
+    for feature in categorical_features:
         col_name = f"{feature}_{user_input[feature]}"
-        if col_name in input_df.columns:
+        if col_name in one_hot_columns:  # Ensure only valid columns are set
             input_df[col_name] = 1
 
-    # Debugging: Print before filtering correct features
-    print("🛠 Raw input data before filtering:\n", input_df)
+    # Fill missing values with 0 to maintain feature alignment
+    input_df = input_df.fillna(0)
 
-    # Ensure only expected features are passed
-    expected_features = model.input_shape[1]  # Expected input size (12)
-    final_input = input_df[df.columns].to_numpy()[:, :expected_features]  # Trim extra features
+    # Ensure final input matches model expectations
+    expected_features = len(feature_columns)  # Use total features saved in pipeline
+    final_input = input_df[feature_columns].to_numpy()[:, :expected_features]
 
-    print("✅ Corrected final input shape for model:", final_input.shape)
+    print("🔍 Checking Preprocessed Input Before Model Prediction:")
+    print("Expected Features in Training:", feature_columns)
+    print("Actual Features in Inference:", input_df.columns.tolist())
+    print("Processed Input Data:\n", input_df)
 
     return final_input
 
-
 def get_prediction(user_input):
     """Predicts the best visualization type for the given user input."""
-
-    # Preprocess input for model
     input_data = preprocess_input(user_input)
 
     print("🔎 Final input shape being sent to model:", input_data.shape)
-
-    # Check input feature count before passing to model
     expected_features = model.input_shape[1]
+    
     if input_data.shape[1] != expected_features:
         return "❌ Feature mismatch! Expected {}, but got {}.".format(expected_features, input_data.shape[1]), None
 
-    # Get model prediction
+    # Make prediction
     prediction = model.predict(input_data)
     predicted_chart_index = np.argmax(prediction) + 1  # Convert to 1-based index
-
-    # Print raw model output for debugging
     print("📊 Model Raw Prediction Probabilities:", prediction)
     print("✅ Model Final Prediction Index:", predicted_chart_index)
-
-
-    # Show top 3 highest probabilities for debugging
     top_indices = np.argsort(prediction[0])[-3:][::-1]
     print(f"🏆 Top 3 Predictions: {[(chart_type_mapping[i+1], prediction[0][i]) for i in top_indices]}")
-
-    # Get the corresponding chart type name
     chart_type = chart_type_mapping.get(predicted_chart_index, "Unknown Chart Type")
-
-    # Generate the visualization plot
     visualization_plot = generate_visualization(predicted_chart_index)
 
     return chart_type, visualization_plot
@@ -147,20 +135,8 @@ def generate_visualization(chart_type):
 
 load_dotenv()
 TOKEN = os.getenv("GITHUB_TOKEN")
-
-# Azure OpenAI API settings
 endpoint = "https://models.inference.ai.azure.com"
 model_name = "gpt-4o"
-
-# Load environment variables
-load_dotenv()
-TOKEN = os.getenv("GITHUB_TOKEN")
-
-# Azure OpenAI API settings
-endpoint = "https://models.inference.ai.azure.com"
-model_name = "gpt-4o"
-
-# ✅ Create OpenAI Client for GitHub AI Inference
 client = OpenAI(
     base_url=endpoint,
     api_key=TOKEN
@@ -204,3 +180,176 @@ def get_explanation(prediction, user_input):
         print(f"❌ GPT Error: {e}")  # Debugging: Log any errors
 
     return explanation
+
+# Define test cases
+test_cases = [
+    {
+        "Data_Dimensions": "1D",
+        "No_of_Attributes": 1,
+        "No_of_Records": 50,
+        "Primary_Variable (Data Type)": "continous",
+        "Task (Purpose)": "distribution",
+        "Target Audience": 0
+    },
+    {
+        "Data_Dimensions": "1D",
+        "No_of_Attributes": 1,
+        "No_of_Records": 20,
+        "Primary_Variable (Data Type)": "categorical",
+        "Task (Purpose)": "distribution",
+        "Target Audience": 0
+    },
+    {
+        "Data_Dimensions": "Hierarchical",
+        "No_of_Attributes": 10,
+        "No_of_Records": 500,
+        "Primary_Variable (Data Type)": "categorical",
+        "Task (Purpose)": "trends",
+        "Target Audience": 1
+    },
+
+    {
+        "Data_Dimensions": "1D",
+        "No_of_Attributes": 2,
+        "No_of_Records": 150,
+        "Primary_Variable (Data Type)": "continous",
+        "Task (Purpose)": "distribution",
+        "Target Audience": 0
+    },
+    {
+        "Data_Dimensions": "ND",
+        "No_of_Attributes": 4,
+        "No_of_Records": 600,
+        "Primary_Variable (Data Type)": "categorical",
+        "Task (Purpose)": "comparison",
+        "Target Audience": 1
+    },
+    {
+        "Data_Dimensions": "Hierarchical",
+        "No_of_Attributes": 5,
+        "No_of_Records": 750,
+        "Primary_Variable (Data Type)": "geographical",
+        "Task (Purpose)": "relationship",
+        "Target Audience": 0
+    },
+    {
+        "Data_Dimensions": "2D",
+        "No_of_Attributes": 7,
+        "No_of_Records": 350,
+        "Primary_Variable (Data Type)": "ordinal",
+        "Task (Purpose)": "comparison",
+        "Target Audience": 1
+    },
+    {
+        "Data_Dimensions": "ND",
+        "No_of_Attributes": 9,
+        "No_of_Records": 1100,
+        "Primary_Variable (Data Type)": "continous",
+        "Task (Purpose)": "relationship",
+        "Target Audience": 1
+    },
+    {
+        "Data_Dimensions": "1D",
+        "No_of_Attributes": 3,
+        "No_of_Records": 300,
+        "Primary_Variable (Data Type)": "continous",
+        "Task (Purpose)": "relationship",
+        "Target Audience": 0
+    },
+    {
+        "Data_Dimensions": "Hierarchical",
+        "No_of_Attributes": 6,
+        "No_of_Records": 850,
+        "Primary_Variable (Data Type)": "categorical",
+        "Task (Purpose)": "trends",
+        "Target Audience": 1
+    },
+    {
+        "Data_Dimensions": "2D",
+        "No_of_Attributes": 8,
+        "No_of_Records": 1300,
+        "Primary_Variable (Data Type)": "ordinal",
+        "Task (Purpose)": "trends",
+        "Target Audience": 0
+    },
+    {
+        "Data_Dimensions": "1D",
+        "No_of_Attributes": 1,
+        "No_of_Records": 10,
+        "Primary_Variable (Data Type)": "categorical",
+        "Task (Purpose)": "distribution",
+        "Target Audience": 0
+    },  # Expected: Pie Chart
+
+    {
+        "Data_Dimensions": "Hierarchical",
+        "No_of_Attributes": 10,
+        "No_of_Records": 5000,
+        "Primary_Variable (Data Type)": "geographical",
+        "Task (Purpose)": "comparison",
+        "Target Audience": 1
+    },
+    {
+        "Data_Dimensions": "Hierarchical",
+        "No_of_Attributes": 20,
+        "No_of_Records": 2500,
+        "Primary_Variable (Data Type)": "ordinal",
+        "Task (Purpose)": "comparison",
+        "Target Audience": 0
+    },
+    {
+        "Data_Dimensions": "1D",
+        "No_of_Attributes": 1,
+        "No_of_Records": 9,
+        "Primary_Variable (Data Type)": "categorical",
+        "Task (Purpose)": "distribution",
+        "Target Audience": 0
+    },
+    {
+        "Data_Dimensions": "2D",
+        "No_of_Attributes": 2,
+        "No_of_Records": 500,
+        "Primary_Variable (Data Type)": "ordinal",
+        "Task (Purpose)": "relationship",
+        "Target Audience": 1
+    },  # Expected: Map
+    {
+        "Data_Dimensions": "2D",
+        "No_of_Attributes": 3,
+        "No_of_Records": 300,
+        "Primary_Variable (Data Type)": "continous",
+        "Task (Purpose)": "trends",
+        "Target Audience": 0
+    },
+    {
+        "Data_Dimensions": "2D",
+        "No_of_Attributes": 3,
+        "No_of_Records": 500,
+        "Primary_Variable (Data Type)": "ordinal",
+        "Task (Purpose)": "relationship",
+        "Target Audience": 1
+    },
+    {
+        "Data_Dimensions": "1D",
+        "No_of_Attributes": 1,
+        "No_of_Records": 9,
+        "Primary_Variable (Data Type)": "categorical",
+        "Task (Purpose)": "distribution",
+        "Target Audience": 0
+    }
+
+
+]
+
+# Test with predefined test cases
+predictions = []
+for test_case in test_cases:
+    prediction, top_3 = get_prediction(test_case)
+    predictions.append((test_case, prediction, top_3))
+
+# Display results
+df_results = pd.DataFrame(predictions, columns=["Test Case", "Predicted Chart", "Top 3 Predictions"])
+print(df_results)
+
+
+
