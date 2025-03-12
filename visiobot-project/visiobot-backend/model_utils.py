@@ -76,26 +76,29 @@ def preprocess_input(user_input):
     return final_input
 
 def get_prediction(user_input):
-    """Predicts the best visualization type for the given user input."""
+    """Predicts the best visualization type and returns a ranked list of recommendations with plots."""
     input_data = preprocess_input(user_input)
 
     print("🔎 Final input shape being sent to model:", input_data.shape)
     expected_features = model.input_shape[1]
-    
+
     if input_data.shape[1] != expected_features:
         return "❌ Feature mismatch! Expected {}, but got {}.".format(expected_features, input_data.shape[1]), None
 
     # Make prediction
-    prediction = model.predict(input_data)
-    predicted_chart_index = np.argmax(prediction) + 1  # Convert to 1-based index
-    print("📊 Model Raw Prediction Probabilities:", prediction)
-    print("✅ Model Final Prediction Index:", predicted_chart_index)
-    top_indices = np.argsort(prediction[0])[-3:][::-1]
-    print(f"🏆 Top 3 Predictions: {[(chart_type_mapping[i+1], prediction[0][i]) for i in top_indices]}")
-    chart_type = chart_type_mapping.get(predicted_chart_index, "Unknown Chart Type")
-    visualization_plot = generate_visualization(predicted_chart_index)
+    prediction = model.predict(input_data)[0]  # Get probability scores
 
-    return chart_type, visualization_plot
+    # Rank all 8 visualizations based on probability scores (descending order)
+    ranked_indices = np.argsort(prediction)[::-1]  # Sort in descending order
+    ranked_visualizations = [(chart_type_mapping[i + 1], prediction[i]) for i in ranked_indices]
+
+    print(f"🏆 Ranked Predictions: {ranked_visualizations}")  # Debugging
+
+    # Generate a plot for the highest-ranked visualization
+    visualization_plot = generate_visualization(ranked_indices[0] + 1)
+
+    return ranked_visualizations, visualization_plot  # Return ranked list with plot
+
 
 
 def generate_visualization(chart_type):
