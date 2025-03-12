@@ -255,104 +255,158 @@ button:active {
         </div>
     </div>
 
-     <script>
+    <script>
         let datasetUploaded = false;
         let datasetInfo = null;
         let purpose = "";
         let audience = "";
-
+        let waitingForFeedback = false;  // <-- Declare this so no ReferenceError occurs
+    
         document.getElementById("userInput").addEventListener("keypress", function(event) {
-    if (event.key === "Enter") {  
-        event.preventDefault();  
-        sendMessage(); 
-    }
-});
-
-async function sendMessage() {
-    let userInput = document.getElementById("userInput").value.trim();
-    let chatbox = document.getElementById("chatbox");
-
-    if (!userInput) return;
-
-    chatbox.innerHTML += `<p class="user-message">${userInput}</p>`;
-    document.getElementById("userInput").value = "";  
-
-    if (!datasetUploaded) {
-        chatbox.innerHTML += `<p class="error-message">No dataset uploaded. Please upload a dataset first.</p>`;
-        return;
-    }
-
-    if (!purpose) {
-        purpose = userInput;
-        chatbox.innerHTML += `<p class="bot-message">Who is your target audience? (Expert or Non-Expert)</p>`;
-        return;
-    }
-
-    if (!audience) {
-        audience = userInput;
-        chatbox.innerHTML += `<p class="bot-message">Processing your data... Generating visualization now.</p>`;
-
-        let requestData = {
-            "Task (Purpose)": purpose.toLowerCase(),
-            "Target Audience": audience.toLowerCase() === "expert" ? 1 : 0
-        };
-
-        try {
-            let response = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/get-visualization", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(requestData)
-            });
-
-            let data = await response.json();
-
-            if (data.error) {
-                chatbox.innerHTML += `<p class="error-message">${data.error}</p>`;
-            } else {
-                chatbox.innerHTML += `<p class="bot-message">Recommended Visualization: <strong>${data.prediction}</strong></p>`;
-                chatbox.innerHTML += `<p class="bot-message">${data.explanation}</p>`;
+            if (event.key === "Enter") {
+                event.preventDefault();
+                sendMessage();
             }
-        } catch (error) {
-            chatbox.innerHTML += `<p class="error-message">Error: Could not fetch visualization.</p>`;
-            console.error("Visualization error:", error);
-        }
-    }
-
-    document.getElementById("userInput").value = "";
-    chatbox.scrollTop = chatbox.scrollHeight;
-}
-
-
-
-document.getElementById("file-upload").addEventListener("change", async function () {
-    let file = this.files[0];
-    if (!file) return;
-
-    let formData = new FormData();
-    formData.append("file", file);
-
-    let chatbox = document.getElementById("chatbox");
-    chatbox.innerHTML += `<p class="user-message">Sending... ${file.name}</p>`;
-
-    try {
-        let response = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/process-dataset", {
-            method: "POST",
-            body: formData,
-            credentials: "include"  
         });
+    
+        async function sendMessage() {
+            let userInput = document.getElementById("userInput").value.trim();
+            let chatbox = document.getElementById("chatbox");
+    
+            if (!userInput) return;
+    
+            chatbox.innerHTML += `<p class="user-message">${userInput}</p>`;
+            document.getElementById("userInput").value = "";
+    
+            // If we are waiting for a "yes/no" feedback:
+            if (waitingForFeedback) {
+                handleFeedback(userInput);
+                return;
+            }
+    
+            if (!datasetUploaded) {
+                chatbox.innerHTML += `<p class="error-message">No dataset uploaded. Please upload a dataset first.</p>`;
+                return;
+            }
+    
+            if (!purpose) {
+                purpose = userInput;
+                chatbox.innerHTML += `<p class="bot-message">Who is your target audience? (Expert or Non-Expert)</p>`;
+                return;
+            }
+    
+            if (!audience) {
+                audience = userInput;
+                chatbox.innerHTML += `<p class="bot-message">Processing your data... Generating visualization now.</p>`;
+    
+                let requestData = {
+                    "Task (Purpose)": purpose.toLowerCase(),
+                    "Target Audience": audience.toLowerCase() === "expert" ? 1 : 0,
+                    "user_feedback": "no",      // For the initial request, "no" means “I am not asking for an alternative”
+                    "current_index": 0
+                };
+    
+                try {
+                    let response = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/get-visualization", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(requestData)
+                    });
+    
+                    let data = await response.json();
+                    displayVisualization(data);
+                } catch (error) {
+                    chatbox.innerHTML += `<p class="error-message">Error: Could not fetch visualization.</p>`;
+                    console.error("Visualization error:", error);
+                }
+                return;
+            }
+        }
+    
+        async function handleFeedback(feedback) {
+            let chatbox = document.getElementById("chatbox");
+    
+            if (feedback.toLowerCase() === "yes") {
+                chatbox.innerHTML += `<p class="bot-message">✅ Great! Proceeding with the selected visualization.</p>`;
+                waitingForFeedback = false;
+                return;
+            }
+    
+            if (feedback.toLowerCase() === "no") {
+                try {
+                    let response = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/next-visualization", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ feedback: "no" })
+                    });
+    
+                    let data = await response.json();
+                    displayVisualization(data);
+                } catch (error) {
+                    chatbox.innerHTML += `<p class="error-message">Error fetching the next visualization.</p>`;
+                    console.error("Next visualization error:", error);
+                }
+                return;
+            }
+    
+            chatbox.innerHTML += `<p class="error-message">Please respond with 'Yes' or 'No'.</p>`;
+        }
+    
+        function displayVisualization(data) {
+            let chatbox = document.getElementById("chatbox");
 
-        let data = await response.json();
-        datasetUploaded = true;
-        datasetInfo = data.dataset_details;
-        chatbox.innerHTML += `<p class="bot-message">Dataset uploaded successfully!</p>`;
-        chatbox.innerHTML += `<p class="bot-message">What is the purpose of your visualization? (Distribution, Relationship, Comparison, Trends)</p>`;
-    } catch (error) {
-        chatbox.innerHTML += `<p class="error-message">Error: Dataset upload failed!</p>`;
-        console.error("Upload error:", error);
+    // If there's a "pre_message", show it first
+    if (data.pre_message) {
+        chatbox.innerHTML += `<p class="bot-message">${data.pre_message}</p>`;
     }
-});
 
+    if (data.message && !data.prediction) {
+        chatbox.innerHTML += `<p class="bot-message">${data.message}</p>`;
+        waitingForFeedback = false;
+        return;
+    }
 
+    if (data.prediction) {
+        chatbox.innerHTML += `<p class="bot-message">Recommended Visualization: <strong>${data.prediction}</strong></p>`;
+    }
+    if (data.explanation) {
+        chatbox.innerHTML += `<p class="bot-message">${data.explanation}</p>`;
+    }
+
+    if (data.ask_feedback) {
+        chatbox.innerHTML += `<p class="bot-message">${data.ask_feedback}</p>`;
+        waitingForFeedback = true;
+    }
+}
+    
+        document.getElementById("file-upload").addEventListener("change", async function () {
+            let file = this.files[0];
+            if (!file) return;
+    
+            let formData = new FormData();
+            formData.append("file", file);
+    
+            let chatbox = document.getElementById("chatbox");
+            chatbox.innerHTML += `<p class="user-message">Sending... ${file.name}</p>`;
+    
+            try {
+                let response = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/process-dataset", {
+                    method: "POST",
+                    body: formData,
+                    credentials: "include"
+                });
+    
+                let data = await response.json();
+                datasetUploaded = true;
+                datasetInfo = data.dataset_details;
+                chatbox.innerHTML += `<p class="bot-message">Dataset uploaded successfully!</p>`;
+                chatbox.innerHTML += `<p class="bot-message">What is the purpose of your visualization? (Distribution, Relationship, Comparison, Trends)</p>`;
+            } catch (error) {
+                chatbox.innerHTML += `<p class="error-message">Error: Dataset upload failed!</p>`;
+                console.error("Upload error:", error);
+            }
+        });
     </script>
+    
 </body>
 </html>
