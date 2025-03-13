@@ -147,21 +147,70 @@ client = OpenAI(
 def get_explanation(prediction, user_input):
     """Generates a simple, human-friendly explanation using GPT-4o via GitHub AI Inference."""
 
+    # Mapping of each chart type to its typical audience
+    typical_audience = {
+        "Histogram": "non-expert",
+        "Line Chart": "non-expert",
+        "Pie Chart": "non-expert",
+        "Scatter Plot": "non-expert",
+        "Linked Graph": "expert",
+        "Map": "expert",
+        "Parallel Coordinates": "expert",
+        "Treemap": "expert"
+    }
+
+    raw_audience = user_input.get("Target Audience", "non-expert")
+    if isinstance(raw_audience, int):
+        # If it's 1 => Expert, else => Non-Expert
+        user_audience = "Expert" if raw_audience == 1 else "Non-Expert"
+    else:
+        # Convert user input to a single lowercase string without hyphens/spaces
+        # e.g. "non-expert" -> "nonexpert", "expert" -> "expert"
+        norm = raw_audience.lower().replace("-", "").replace(" ", "")
+        if norm == "expert":
+            user_audience = "Expert"
+        else:
+            # Anything else is treated as "nonexpert"
+            user_audience = "Non-Expert"
+
+    # 2) Find the recommended chart's typical audience, e.g. "expert" or "non-expert"
+    recommended_aud = typical_audience.get(prediction, "non-expert")
+    # We'll convert it to "Expert"/"Non-Expert" for final display
+    if recommended_aud.lower() == "expert":
+        recommended_audience = "Expert"
+    else:
+        recommended_audience = "Non-Expert"
+
+    # Build a note if there's a mismatch
+    note_html = ""
+    if recommended_audience != user_audience:
+        note_html = (
+            "<strong>Note:</strong> "
+            f"Although you requested a visualization for {user_audience} users, "
+            f"based on my analysis, {prediction} appears to best suit your dataset's characteristics."
+        )
+
+    # Construct prompt for GPT
     prompt = f"""
     Explain why a <strong>{prediction}</strong> is the best choice based on the dataset details below.
 
-    Keep it <strong>short, simple, and natural</strong>. Use clear, easy-to-understand language. <strong>List all six inputs first</strong>, then give a <strong>brief, direct reason</strong> why this chart is the best choice. Avoid technical terms like "intuitive" or "effectively."
+    Keep it <strong>short, simple, and natural</strong>. Use clear, easy-to-understand language. 
+    <strong>List all six inputs first</strong>, then give a <strong>brief, direct reason</strong> 
+    why this chart is the best choice. Avoid technical terms like "intuitive" or "effectively."
 
     <strong>Dataset Details:</strong>
     - <strong>Data Dimension:</strong> {user_input['Data_Dimensions']}
     - <strong>Number of Attributes:</strong> {user_input['No_of_Attributes']}
     - <strong>Number of Records:</strong> {user_input['No_of_Records']}
     - <strong>Primary Variable Type:</strong> {user_input['Primary_Variable (Data Type)']}
-    - <strong>Task Purpose:</strong> {user_input['Task (Purpose)']}
+    - <strong>Task (Purpose):</strong> {user_input['Task (Purpose)']}
     - <strong>Target Audience:</strong> {'Expert' if user_input['Target Audience'] == 1 else 'Non-Expert'}
 
     <strong>Example Output Format:</strong>  
-    Since your dataset's dimension is <strong>2D</strong>, has <strong>9 attributes</strong>, <strong>4177 records</strong>, main primary variable is <strong>continuous</strong>, and you chose <strong>comparison</strong>, a <strong>Line Chart</strong> fits best. It helps track changes over time in a simple and clear way, making it easy for a Non-Expert to understand.
+    Since your dataset's dimension is <strong>2D</strong>, has <strong>9 attributes</strong>, 
+    <strong>4177 records</strong>, main primary variable is <strong>continuous</strong>, and you chose 
+    <strong>comparison</strong>, a <strong>Line Chart</strong> fits best. It helps track changes over time 
+    in a simple and clear way, making it easy for a <strong>Non-Expert</strong> to understand.
     """
 
     try:
@@ -174,14 +223,17 @@ def get_explanation(prediction, user_input):
             temperature=0.5,
             max_tokens=150
         )
-
         explanation = response.choices[0].message.content.strip()
-        print(f"🧠 GPT Explanation: {explanation}")  # Debugging: See explanation in terminal
+        print(f"🧠 GPT Explanation: {explanation}")
+
     except Exception as e:
         explanation = f"⚠️ GPT explanation could not be generated due to an error: {str(e)}"
-        print(f"❌ GPT Error: {e}")  # Debugging: Log any errors
+        print(f"❌ GPT Error: {e}")
 
-    return explanation
+    # Return both the main explanation and the note separately
+    return explanation, note_html
+
+
 
 # Define test cases
 test_cases = [

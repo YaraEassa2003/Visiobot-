@@ -151,23 +151,19 @@ def send_current_recommendation(user_input, as_dict=False):
     current_index = global_data["current_index"]
     recommendation_queue = global_data["recommendation_queue"]
     if current_index >= len(recommendation_queue):
-        # Return a dictionary or a jsonify if as_dict is false
         result = {"message": "No more visualization options."}
         return result if as_dict else jsonify(result)
 
     chart_name, _ = recommendation_queue[current_index]
-    explanation = model_utils.get_explanation(chart_name, user_input)
+    explanation, note_html = model_utils.get_explanation(chart_name, user_input)
 
     result = {
         "prediction": chart_name,
         "explanation": explanation,
+        "note": note_html,
         "ask_feedback": "Are you satisfied with this recommendation? (Yes/No)"
     }
-
-    if as_dict:
-        return result
-    else:
-        return jsonify(result)
+    return result if as_dict else jsonify(result)
 
 @app.route("/plot.png")
 def serve_plot():

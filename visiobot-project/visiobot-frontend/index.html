@@ -63,6 +63,7 @@
             display: flex;
             flex-direction: column;
             align-items: flex-start; 
+            overflow-y: auto;
         }
 
 #chatbox::-webkit-scrollbar {
@@ -276,6 +277,7 @@ button:active {
             if (!userInput) return;
     
             chatbox.innerHTML += `<p class="user-message">${userInput}</p>`;
+            scrollToBottom();
             document.getElementById("userInput").value = "";
     
             // If we are waiting for a "yes/no" feedback:
@@ -286,19 +288,23 @@ button:active {
     
             if (!datasetUploaded) {
                 chatbox.innerHTML += `<p class="error-message">No dataset uploaded. Please upload a dataset first.</p>`;
+                scrollToBottom();
                 return;
             }
     
             if (!purpose) {
                 purpose = userInput;
                 chatbox.innerHTML += `<p class="bot-message">Who is your target audience? (Expert or Non-Expert)</p>`;
+                scrollToBottom();
                 return;
             }
     
             if (!audience) {
                 audience = userInput;
                 chatbox.innerHTML += `<p class="bot-message">Processing your data... Generating visualization now.</p>`;
-    
+                scrollToBottom();
+
+
                 let requestData = {
                     "Task (Purpose)": purpose.toLowerCase(),
                     "Target Audience": audience.toLowerCase() === "expert" ? 1 : 0,
@@ -328,6 +334,7 @@ button:active {
     
             if (feedback.toLowerCase() === "yes") {
                 chatbox.innerHTML += `<p class="bot-message">✅ Great! Proceeding with the selected visualization.</p>`;
+                scrollToBottom();
                 waitingForFeedback = false;
                 return;
             }
@@ -344,39 +351,65 @@ button:active {
                     displayVisualization(data);
                 } catch (error) {
                     chatbox.innerHTML += `<p class="error-message">Error fetching the next visualization.</p>`;
+                    scrollToBottom();
                     console.error("Next visualization error:", error);
                 }
                 return;
             }
     
             chatbox.innerHTML += `<p class="error-message">Please respond with 'Yes' or 'No'.</p>`;
+            scrollToBottom();
+
         }
     
         function displayVisualization(data) {
-            let chatbox = document.getElementById("chatbox");
+    let chatbox = document.getElementById("chatbox");
+    waitingForFeedback = false;
 
-    // If there's a "pre_message", show it first
     if (data.pre_message) {
         chatbox.innerHTML += `<p class="bot-message">${data.pre_message}</p>`;
-    }
+        scrollToBottom();
 
+    }
+    // If there's an error or final message
     if (data.message && !data.prediction) {
         chatbox.innerHTML += `<p class="bot-message">${data.message}</p>`;
-        waitingForFeedback = false;
+        scrollToBottom();
         return;
     }
 
+    // Show the recommended chart
     if (data.prediction) {
-        chatbox.innerHTML += `<p class="bot-message">Recommended Visualization: <strong>${data.prediction}</strong></p>`;
-    }
-    if (data.explanation) {
-        chatbox.innerHTML += `<p class="bot-message">${data.explanation}</p>`;
+        chatbox.innerHTML += `<p class="bot-message">
+            Recommended Visualization: <strong>${data.prediction}</strong>
+        </p>`;
+        scrollToBottom();
+
     }
 
+    // Show the main GPT explanation
+    if (data.explanation) {
+        chatbox.innerHTML += `<p class="bot-message">${data.explanation}</p>`;
+        scrollToBottom();
+
+    }
+
+    // If there's a mismatch note, display it in its own bot message
+    if (data.note) {
+        chatbox.innerHTML += `<p class="bot-message">${data.note}</p>`;
+        scrollToBottom();
+    }
+
+    // Finally, ask for feedback
     if (data.ask_feedback) {
         chatbox.innerHTML += `<p class="bot-message">${data.ask_feedback}</p>`;
+        scrollToBottom();
         waitingForFeedback = true;
     }
+}
+function scrollToBottom() {
+    let chatbox = document.getElementById("chatbox");
+    chatbox.scrollTop = chatbox.scrollHeight;
 }
     
         document.getElementById("file-upload").addEventListener("change", async function () {
@@ -388,6 +421,8 @@ button:active {
     
             let chatbox = document.getElementById("chatbox");
             chatbox.innerHTML += `<p class="user-message">Sending... ${file.name}</p>`;
+            scrollToBottom();
+
     
             try {
                 let response = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/process-dataset", {
@@ -400,9 +435,14 @@ button:active {
                 datasetUploaded = true;
                 datasetInfo = data.dataset_details;
                 chatbox.innerHTML += `<p class="bot-message">Dataset uploaded successfully!</p>`;
+                scrollToBottom();
                 chatbox.innerHTML += `<p class="bot-message">What is the purpose of your visualization? (Distribution, Relationship, Comparison, Trends)</p>`;
+                scrollToBottom();
+
             } catch (error) {
                 chatbox.innerHTML += `<p class="error-message">Error: Dataset upload failed!</p>`;
+                scrollToBottom();
+
                 console.error("Upload error:", error);
             }
         });
