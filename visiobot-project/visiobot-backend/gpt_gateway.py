@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv("GITHUB_TOKEN")
 endpoint = "https://models.inference.ai.azure.com"
-model_name = "gpt-4o"
+model_name = "gpt-4o-mini"
 
 client = OpenAI(
     base_url=endpoint,
