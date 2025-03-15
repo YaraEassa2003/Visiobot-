@@ -233,192 +233,52 @@ def get_explanation(prediction, user_input):
     # Return both the main explanation and the note separately
     return explanation, note_html
 
-
-
-# Define test cases
-test_cases = [
-    { #0
-        "Data_Dimensions": "1D",
-        "No_of_Attributes": 1,
-        "No_of_Records": 50,
-        "Primary_Variable (Data Type)": "continuous",
-        "Task (Purpose)": "distribution",
-        "Target Audience": "Non-Expert"
-    },
-    { #1
-        "Data_Dimensions": "1D",
-        "No_of_Attributes": 1,
-        "No_of_Records": 20,
-        "Primary_Variable (Data Type)": "categorical",
-        "Task (Purpose)": "distribution",
-        "Target Audience": "Non-Expert"
-    },
-    {
-        "Data_Dimensions": "Hierarchical",
-        "No_of_Attributes": 10,
-        "No_of_Records": 500,
-        "Primary_Variable (Data Type)": "categorical",
-        "Task (Purpose)": "trends",
-        "Target Audience": "Expert"
-    },
-    {
-        "Data_Dimensions": "1D",
-        "No_of_Attributes": 2,
-        "No_of_Records": 150,
-        "Primary_Variable (Data Type)": "continuous",
-        "Task (Purpose)": "distribution",
-        "Target Audience": "Non-Expert"
-    },
-    {
-        "Data_Dimensions": "ND",
-        "No_of_Attributes": 4,
-        "No_of_Records": 600,
-        "Primary_Variable (Data Type)": "categorical",
-        "Task (Purpose)": "comparison",
-        "Target Audience": "Expert"
-    },
-    {
-        "Data_Dimensions": "Hierarchical",
-        "No_of_Attributes": 5,
-        "No_of_Records": 750,
-        "Primary_Variable (Data Type)": "geographical",
-        "Task (Purpose)": "relationship",
-        "Target Audience": "Non-Expert"
-    },
-    {
-        "Data_Dimensions": "2D",
-        "No_of_Attributes": 7,
-        "No_of_Records": 350,
-        "Primary_Variable (Data Type)": "ordinal",
-        "Task (Purpose)": "comparison",
-        "Target Audience": "Expert"
-    },
-    {
-        "Data_Dimensions": "ND",
-        "No_of_Attributes": 9,
-        "No_of_Records": 1100,
-        "Primary_Variable (Data Type)": "continuous",
-        "Task (Purpose)": "relationship",
-        "Target Audience": "Expert"
-    },
-    {
-        "Data_Dimensions": "1D",
-        "No_of_Attributes": 3,
-        "No_of_Records": 300,
-        "Primary_Variable (Data Type)": "continuous",
-        "Task (Purpose)": "relationship",
-        "Target Audience": "Non-Expert"
-    },
-    {
-        "Data_Dimensions": "Hierarchical",
-        "No_of_Attributes": 6,
-        "No_of_Records": 850,
-        "Primary_Variable (Data Type)": "categorical",
-        "Task (Purpose)": "trends",
-        "Target Audience": "Expert"
-    },
-    {
-        "Data_Dimensions": "2D",
-        "No_of_Attributes": 8,
-        "No_of_Records": 1300,
-        "Primary_Variable (Data Type)": "ordinal",
-        "Task (Purpose)": "trends",
-        "Target Audience": "Non-Expert"
-    },
-    {
-        "Data_Dimensions": "1D",
-        "No_of_Attributes": 1,
-        "No_of_Records": 10,
-        "Primary_Variable (Data Type)": "categorical",
-        "Task (Purpose)": "distribution",
-        "Target Audience": "Non-Expert"
-    },  # Expected: Pie Chart
-    {
-        "Data_Dimensions": "Hierarchical",
-        "No_of_Attributes": 10,
-        "No_of_Records": 5000,
-        "Primary_Variable (Data Type)": "geographical",
-        "Task (Purpose)": "comparison",
-        "Target Audience": "Expert"
-    },
-    {
-        "Data_Dimensions": "Hierarchical",
-        "No_of_Attributes": 20,
-        "No_of_Records": 2500,
-        "Primary_Variable (Data Type)": "ordinal",
-        "Task (Purpose)": "comparison",
-        "Target Audience": "Non-Expert"
-    },
-    {
-        "Data_Dimensions": "1D",
-        "No_of_Attributes": 1,
-        "No_of_Records": 9,
-        "Primary_Variable (Data Type)": "categorical",
-        "Task (Purpose)": "distribution",
-        "Target Audience": "Non-Expert"
-    },
-    {
-        "Data_Dimensions": "2D",
-        "No_of_Attributes": 2,
-        "No_of_Records": 500,
-        "Primary_Variable (Data Type)": "ordinal",
-        "Task (Purpose)": "relationship",
-        "Target Audience": "Expert"
-    },  # Expected: Map
-    {
-        "Data_Dimensions": "2D",
-        "No_of_Attributes": 3,
-        "No_of_Records": 300,
-        "Primary_Variable (Data Type)": "continuous",
-        "Task (Purpose)": "trends",
-        "Target Audience": "Non-Expert"
-    },
-    {
-        "Data_Dimensions": "2D",
-        "No_of_Attributes": 3,
-        "No_of_Records": 500,
-        "Primary_Variable (Data Type)": "ordinal",
-        "Task (Purpose)": "relationship",
-        "Target Audience": "Expert"
-    },
-    {
-        "Data_Dimensions": "1D",
-        "No_of_Attributes": 1,
-        "No_of_Records": 9,
-        "Primary_Variable (Data Type)": "categorical",
-        "Task (Purpose)": "distribution",
-        "Target Audience": "Non-Expert"
-    },
-
-    {
-        "Data_Dimensions": "1D",
-        "No_of_Attributes": 1,
-        "No_of_Records": 35,
-        "Primary_Variable (Data Type)": "ordinal",
-        "Task (Purpose)": "tredistributionnds",
-        "Target Audience": "Non-Expert"
-    },
-    {
-        "Data_Dimensions": "1D",
-        "No_of_Attributes": 1,
-        "No_of_Records": 60,
-        "Primary_Variable (Data Type)": "geographical",
-        "Task (Purpose)": "distribution",
-        "Target Audience": "Expert"
-    }
-]
-
-
-
-# Test with predefined test cases
-predictions = []
-for test_case in test_cases:
-    prediction, top_3 = get_prediction(test_case)
-    predictions.append((test_case, prediction, top_3))
-
-# Display results
-df_results = pd.DataFrame(predictions, columns=["Test Case", "Predicted Chart", "Top 3 Predictions"])
-print(df_results)
-
+def generate_final_plot(df, x_axis, y_axis, chart_type):
+    plt.figure(figsize=(8, 5))
+    ctype = chart_type.lower()
+    
+    if "histogram" in ctype:
+        plt.hist(df[x_axis], bins=10, color="blue", alpha=0.7)
+    elif "pie" in ctype:
+        # Assume df[x_axis] contains categories and df[y_axis] the numeric values
+        data = df.groupby(x_axis)[y_axis].sum()
+        plt.pie(data, labels=data.index, autopct="%1.1f%%")
+    elif "map" in ctype:
+        # For map, you might use a simple scatter plot as a placeholder or integrate a mapping library
+        plt.scatter(df[x_axis], df[y_axis], c='blue', alpha=0.6)
+        plt.title("Map (Placeholder)")
+    elif "treemap" in ctype:
+        # You can integrate squarify or create a placeholder
+        try:
+            import squarify
+            values = df[y_axis]
+            labels = df[x_axis].astype(str)
+            squarify.plot(sizes=values, label=labels, alpha=0.7)
+        except ImportError:
+            plt.text(0.5, 0.5, "Treemap not implemented", ha="center")
+    elif "parallel" in ctype:
+        # For parallel coordinates, you might need a dedicated function (e.g. pandas.plotting.parallel_coordinates)
+        try:
+            from pandas.plotting import parallel_coordinates
+            parallel_coordinates(df, class_column=x_axis)
+        except Exception:
+            plt.text(0.5, 0.5, "Parallel Coordinates not implemented", ha="center")
+    elif "scatter" in ctype:
+        sns.scatterplot(x=df[x_axis], y=df[y_axis])
+    elif "linked" in ctype:
+        plt.plot(df[x_axis], df[y_axis], linestyle="--", marker="o")
+    elif "line" in ctype:
+        sns.lineplot(x=df[x_axis], y=df[y_axis])
+    else:
+        plt.text(0.5, 0.5, f"Unsupported chart type: {chart_type}", ha="center")
+    
+    plt.xlabel(x_axis)
+    plt.ylabel(y_axis)
+    plt.title(f"{chart_type} of {y_axis} vs {x_axis}")
+    
+    plot_path = "generated_visualization.png"
+    plt.savefig(plot_path)
+    plt.close()
+    return plot_path
 
 

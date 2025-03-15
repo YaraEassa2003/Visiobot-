@@ -3,10 +3,15 @@ import click
 import model_utils
 import dataset_utils
 import gpt_gateway
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import secrets
 from flask import send_file
+import re
+import json
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -130,7 +135,16 @@ def next_visualization():
 
     # If user says "yes", we finalize the current recommendation
     if user_feedback == "yes":
-        return jsonify({"message": "Final recommendation accepted."})
+         #1) Get the final recommended chart from the queue
+        chart_name, _ = global_data["recommendation_queue"][global_data["current_index"]]
+        # 2) Store it in global_data so we can use it for final plot
+        global_data["final_chart_type"] = chart_name 
+        try:
+        # Once the user is satisfied, read the dataset and ask for column selection via GPT.
+            # (You can call the new endpoint function directly.)
+            return get_dataset_columns()  # This returns a JSON with the "final_message" field.
+        except Exception as e:
+            return jsonify({"error": f"Failed during final step: {str(e)}"}), 500
 
     # If user says "no", we move to the next chart
     elif user_feedback == "no":
@@ -167,9 +181,113 @@ def send_current_recommendation(user_input, as_dict=False):
 
 @app.route("/plot.png")
 def serve_plot():
-    # Must be an absolute or correct relative path to "generated_visualization.png"
     path_to_plot = os.path.join(BASE_DIR, "generated_visualization.png")
     return send_file(path_to_plot, mimetype="image/png")
+
+
+@app.route("/get-dataset-columns", methods=["POST"])
+def get_dataset_columns():
+    """
+    Reads the uploaded dataset, extracts its column names,
+    and calls GPT with a minimal prompt:
+      - Just enumerates columns in <strong> tags
+      - Asks the user which columns they want to visualize
+    """
+    try:
+        dataset_path = global_data.get("dataset_path")
+        if not dataset_path:
+            return jsonify({"error": "Dataset not found."}), 400
+
+        df = pd.read_csv(dataset_path)
+        columns = list(df.columns)
+        # Bold each column with <strong>
+        formatted_columns = ", ".join([f"<strong>{col}</strong>" for col in columns])
+
+        # Instead of GPT, just return a fixed message:
+        message = (
+            f"The dataset you uploaded contains columns: {formatted_columns}. "
+            "Which columns and what insights would you like to visualize?"
+        )
+        return jsonify({"final_message": message})
+
+    except Exception as e:
+        return jsonify({"error": f"Failed to retrieve dataset columns: {str(e)}"}), 500
+
+
+@app.route("/final-plot", methods=["POST"])
+def final_plot():
+    """
+    Uses GPT to interpret user input for columns,
+    then generates a plot using the final recommended chart type
+    from the model. This version simulates image analysis by using
+    the dataset summary to generate insights, emphasizing a concise,
+    confident tone that begins with "The plot shows..."
+    """
+    try:
+        user_request = request.json.get("user_request", "").strip()
+        dataset_path = global_data.get("dataset_path")
+        final_chart_type = global_data.get("final_chart_type")
+
+        if not dataset_path or not final_chart_type:
+            return jsonify({"error": "No final chart type or dataset found."}), 400
+
+        df = pd.read_csv(dataset_path)
+        all_columns = list(df.columns)
+
+        # 1) Strict prompt to GPT
+        prompt = (
+            "Return only valid JSON. No extra text.\n"
+            f"Columns: {', '.join(all_columns)}.\n"
+            f"User wants: '{user_request}'.\n"
+            "Which columns should be x_axis and y_axis?\n"
+            "Format: {\"x_axis\": \"<col1>\", \"y_axis\": \"<col2>\"}"
+        )
+
+        gpt_response = gpt_gateway.handle_chat(prompt)
+        print("🧠 GPT raw response:", repr(gpt_response))
+
+        # 2) Extract the JSON substring from GPT’s text using a regex
+        match = re.search(r"\{.*?\}", gpt_response, re.DOTALL)
+        if not match:
+            return jsonify({"error": "GPT did not return a JSON object."}), 500
+
+        json_str = match.group(0)  # The first { ... } block
+        try:
+            parsed = json.loads(json_str)
+        except json.JSONDecodeError:
+            return jsonify({"error": "Failed to parse JSON from GPT's response."}), 500
+
+        x_axis = parsed.get("x_axis")
+        y_axis = parsed.get("y_axis")
+        if not x_axis or not y_axis:
+            return jsonify({"error": "GPT JSON missing x_axis or y_axis."}), 500
+
+        # 3) Generate the plot using the final_chart_type
+        plot_path = model_utils.generate_final_plot(df, x_axis, y_axis, final_chart_type)
+
+        summary_stats = df.describe().to_string()
+
+        explanation_prompt = f"""
+You are a seasoned business intelligence analyst interpreting a '{final_chart_type}' 
+plot of '{y_axis}' vs '{x_axis}'. Although you do not see the actual image, 
+here is the dataset summary:
+{summary_stats}
+
+In 2–3 sentences, state the most important insights that will impact business decisions. 
+Use direct, confident language (e.g., "The plot shows...") and avoid numbering your points.
+        """
+
+        plot_description = gpt_gateway.handle_chat(explanation_prompt)
+
+        base_url = "https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev"
+        return jsonify({
+            "message": f"Here is your {final_chart_type} for '{y_axis}' and '{x_axis}'.",
+            "plot_description": plot_description.strip(),
+            "plot_url":  f"{base_url}/plot.png"
+        })
+
+    except Exception as e:
+        return jsonify({"error": f"Failed to generate final plot: {str(e)}"}), 500
 
 @app.route("/chat", methods=["POST"])
 def chat():

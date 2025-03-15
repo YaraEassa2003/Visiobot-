@@ -262,6 +262,7 @@ button:active {
         let purpose = "";
         let audience = "";
         let waitingForFeedback = false;  // <-- Declare this so no ReferenceError occurs
+        let waitingForColumns = false;
     
         document.getElementById("userInput").addEventListener("keypress", function(event) {
             if (event.key === "Enter") {
@@ -279,7 +280,39 @@ button:active {
             chatbox.innerHTML += `<p class="user-message">${userInput}</p>`;
             scrollToBottom();
             document.getElementById("userInput").value = "";
-    
+            if (waitingForColumns) {
+    waitingForColumns = false; // we only do this once
+    try {
+        let response = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/final-plot", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_request: userInput })
+        });
+        let data = await response.json();
+
+        if (data.error) {
+            chatbox.innerHTML += `<p class="error-message">${data.error}</p>`;
+            scrollToBottom();
+        } else {
+            chatbox.innerHTML += `<p class="bot-message">${data.message}</p>`;
+            scrollToBottom();
+            if (data.plot_url) {
+                chatbox.innerHTML += `<img class="visualization-img" src="${data.plot_url}" alt="Final Plot" />`;
+                    }
+                
+                scrollToBottom();
+            }
+            if (data.plot_description) {
+                chatbox.innerHTML += `<p class="bot-message">${data.plot_description}</p>`;
+                    scrollToBottom();
+            }
+    } catch (error) {
+        chatbox.innerHTML += `<p class="error-message">Error generating final plot.</p>`;
+        console.error("Final plot error:", error);
+    }
+    return;
+}
+
             // If we are waiting for a "yes/no" feedback:
             if (waitingForFeedback) {
                 handleFeedback(userInput);
@@ -336,8 +369,20 @@ button:active {
                 chatbox.innerHTML += `<p class="bot-message">✅ Great! Proceeding with the selected visualization.</p>`;
                 scrollToBottom();
                 waitingForFeedback = false;
-                return;
-            }
+                try {
+                    let response = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/next-visualization", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ feedback: "yes" })
+                        });
+                        let data = await response.json();
+                        displayVisualization(data);  // or handle the "final_message" from the server
+                    } catch (error) {
+                        chatbox.innerHTML += `<p class="error-message">Error fetching the final step.</p>`;
+                        scrollToBottom();
+                    }
+                    return;
+                    }
     
             if (feedback.toLowerCase() === "no") {
                 try {
@@ -371,6 +416,14 @@ button:active {
         scrollToBottom();
 
     }
+    // If a final_message exists, display it in its own bot message box and do not ask for further feedback.
+    if (data.final_message) {
+        chatbox.innerHTML += `<p class="bot-message">${data.final_message}</p>`;
+        waitingForColumns = true;
+        scrollToBottom();
+        return;
+    }
+
     // If there's an error or final message
     if (data.message && !data.prediction) {
         chatbox.innerHTML += `<p class="bot-message">${data.message}</p>`;
