@@ -182,8 +182,9 @@ def send_current_recommendation(user_input, as_dict=False):
 
 @app.route("/plot.png")
 def serve_plot():
-    path_to_plot = os.path.join(BASE_DIR, "generated_visualization.png")
+    path_to_plot = os.path.join(BASE_DIR, "generated_plots", "generated_visualization.png")
     return send_file(path_to_plot, mimetype="image/png")
+
 
 
 @app.route("/get-dataset-columns", methods=["POST"])
@@ -329,7 +330,7 @@ def restart():
 
 
     return jsonify({
-        "restart_message": "All set! Let's start fresh. Please upload a dataset again."
+        "restart_message": "All set! Let's start fresh. Please upload a  dataset again."
     })
 
 
