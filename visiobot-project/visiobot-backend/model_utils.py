@@ -11,7 +11,8 @@ import joblib
 import geopandas as gpd
 import networkx as nx
 import squarify
-            
+import gpt_gateway
+
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -230,15 +231,6 @@ def generate_visualization(chart_type):
     plt.close()
     return "generated_visualization.png"
 
-load_dotenv()
-TOKEN = os.getenv("GITHUB_TOKEN")
-endpoint = "https://models.inference.ai.azure.com"
-model_name = "gpt-4o"
-client = OpenAI(
-    base_url=endpoint,
-    api_key=TOKEN
-)
-
 def get_explanation(prediction, user_input):
     """
     Generates a simple, human-friendly explanation using GPT-4o mini
@@ -313,16 +305,8 @@ Use <strong> tags for bold text, and do not use ** for bolding.
     """
 
     try:
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=[
-                {"role": "system", "content": "You are an AI that provides human-friendly explanations for data visualization recommendations."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.5,
-            max_tokens=150
-        )
-        explanation = response.choices[0].message.content.strip()
+        # Use gpt_gateway instead of a local OpenAI client
+        explanation = gpt_gateway.handle_chat(prompt)
         print(f"🧠 GPT Explanation: {explanation}")
 
     except Exception as e:
