@@ -21,6 +21,10 @@ SHAPEFILE_PATH = os.path.join(DATA_DIR, "ne_110m_admin_0_countries.shp")
 print("Loading shapefile from:", SHAPEFILE_PATH)
 world = gpd.read_file(SHAPEFILE_PATH)
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PLOT_DIR = os.path.join(BASE_DIR, "generated_plots")
+os.makedirs(PLOT_DIR, exist_ok=True)
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  
 MODEL_PATH = os.path.join(BASE_DIR, "saved_models", "visiobot_model.keras")
@@ -227,9 +231,10 @@ def generate_visualization(chart_type):
         plt.text(0.5, 0.5, "Unknown Chart Type", fontsize=12, ha="center")
 
     # Save and return path
-    plt.savefig("generated_visualization.png")
+    plot_path = os.path.join(PLOT_DIR, "generated_visualization.png")
+    plt.savefig(plot_path)
     plt.close()
-    return "generated_visualization.png"
+    return plot_path
 
 def get_explanation(prediction, user_input):
     """
@@ -438,7 +443,7 @@ def generate_final_plot(df, x_axis, y_axis, chart_type):
     plt.ylabel(y_axis)
     plt.title(f"{chart_type} of {y_axis} vs {x_axis}")
     
-    plot_path = "generated_visualization.png"
+    plot_path = os.path.join(PLOT_DIR, "generated_visualization.png")
     plt.savefig(plot_path)
     plt.close()
     return plot_path
