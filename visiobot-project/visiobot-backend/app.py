@@ -329,7 +329,7 @@ def restart():
 
 
     return jsonify({
-        "restart_message": "All set! Let's start fresh. Please upload your dataset again."
+        "restart_message": "All set! Let's start fresh. Please upload a dataset again."
     })
 
 
