@@ -11,6 +11,7 @@ from flask_cors import CORS
 import secrets
 from flask import send_file
 import re
+import time
 import json
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -280,10 +281,14 @@ Use direct, confident language (e.g., "The plot shows...") and avoid numbering y
         plot_description = gpt_gateway.handle_chat(explanation_prompt)
 
         base_url = "https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev"
+        cache_buster = int(time.time())  # e.g. 1679000000
+        plot_url = f"{base_url}/plot.png?cb={cache_buster}"
+
         return jsonify({
             "message": f"Here is your {final_chart_type} for '{y_axis}' and '{x_axis}'.",
             "plot_description": plot_description.strip(),
-            "plot_url":  f"{base_url}/plot.png"
+            "plot_url": plot_url,
+            "ask_restart": "Would you like to start over with a new dataset? (Yes/No)"
         })
 
     except Exception as e:
@@ -308,6 +313,24 @@ def chat():
 
     else:
         return jsonify({"response": "I can guide you through the process, but I won't generate a recommendation myself. Let's start by uploading your dataset."})
+
+
+@app.route("/restart", methods=["POST"])
+def restart():
+    """
+    Resets global_data so the user can start the entire process again.
+    """
+    global_data["dataset_info"] = None
+    global_data["dataset_uploaded"] = False
+    global_data["dataset_path"] = None
+    global_data["recommendation_queue"] = None
+    global_data["current_index"] = 0
+    global_data["final_chart_type"] = None
+
+
+    return jsonify({
+        "restart_message": "All set! Let's start fresh. Please upload your dataset again."
+    })
 
 
 if __name__ == "__main__":

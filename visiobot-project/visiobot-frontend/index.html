@@ -263,6 +263,8 @@ button:active {
         let audience = "";
         let waitingForFeedback = false;  // <-- Declare this so no ReferenceError occurs
         let waitingForColumns = false;
+        let waitingForRestart = false; // new global
+
     
         document.getElementById("userInput").addEventListener("keypress", function(event) {
             if (event.key === "Enter") {
@@ -280,6 +282,44 @@ button:active {
             chatbox.innerHTML += `<p class="user-message">${userInput}</p>`;
             scrollToBottom();
             document.getElementById("userInput").value = "";
+
+            // 1) If waiting for restart decision, handle it first.
+    if (waitingForRestart) {
+        waitingForRestart = false;
+        if (userInput.toLowerCase() === "yes") {
+            try {
+                let response = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/restart", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" }
+                });
+                let data = await response.json();
+                chatbox.innerHTML += `<p class="bot-message">${data.restart_message}</p>`;
+                scrollToBottom();
+                // Reset global states
+                datasetUploaded = false;
+                datasetInfo = null;
+                purpose = "";
+                audience = "";
+                waitingForFeedback = false;
+                waitingForColumns = false;
+            } catch (error) {
+                chatbox.innerHTML += `<p class="error-message">Error restarting the chat.</p>`;
+                console.error("Restart error:", error);
+            }
+        } else if (userInput.toLowerCase() === "no") {
+            chatbox.innerHTML += `
+                <div id="intro-message">
+                  <p>VisioBot has left the chat. Thank you for using our service!</p>
+                </div>`;
+            scrollToBottom();
+            document.getElementById("input-area").style.display = "none";
+        } else {
+            chatbox.innerHTML += `<p class="error-message">Please respond with "Yes" or "No".</p>`;
+            scrollToBottom();
+            waitingForRestart = true;
+        }
+        return;
+    }
             if (waitingForColumns) {
     waitingForColumns = false; // we only do this once
     try {
@@ -306,6 +346,12 @@ button:active {
                 chatbox.innerHTML += `<p class="bot-message">${data.plot_description}</p>`;
                     scrollToBottom();
             }
+
+            if (data.ask_restart) {
+    chatbox.innerHTML += `<p class="bot-message">${data.ask_restart}</p>`;
+    scrollToBottom();
+    waitingForRestart = true;  // so the user’s next "Yes"/"No" answer is handled
+}
     } catch (error) {
         chatbox.innerHTML += `<p class="error-message">Error generating final plot.</p>`;
         console.error("Final plot error:", error);
@@ -414,52 +460,60 @@ button:active {
     if (data.pre_message) {
         chatbox.innerHTML += `<p class="bot-message">${data.pre_message}</p>`;
         scrollToBottom();
-
     }
-    // If a final_message exists, display it in its own bot message box and do not ask for further feedback.
+
+
+    // The key fix is: do *not* return immediately if there's a message but no prediction
+    if (data.message && !data.prediction) {
+        chatbox.innerHTML += `<p class="bot-message">${data.message}</p>`;
+        scrollToBottom();
+        // <-- Do *not* return here, so we can still check data.ask_restart
+    }
+
+    // If we have an ask_restart field, show the prompt and set waitingForRestart = true
+    if (data.ask_restart) {
+        chatbox.innerHTML += `<p class="bot-message">${data.ask_restart}</p>`;
+        scrollToBottom();
+        waitingForRestart = true;
+        return; 
+    }
+
+    // If a final_message exists, display it in its own bot message box and set waitingForColumns = true
     if (data.final_message) {
         chatbox.innerHTML += `<p class="bot-message">${data.final_message}</p>`;
         waitingForColumns = true;
         scrollToBottom();
-        return;
+        // Note: We do *not* return here, because we might also need to check data.ask_restart below
     }
 
-    // If there's an error or final message
-    if (data.message && !data.prediction) {
-        chatbox.innerHTML += `<p class="bot-message">${data.message}</p>`;
-        scrollToBottom();
-        return;
-    }
-
-    // Show the recommended chart
+    // If there's a prediction, show the recommended chart
     if (data.prediction) {
         chatbox.innerHTML += `<p class="bot-message">
             Recommended Visualization: <strong>${data.prediction}</strong>
         </p>`;
         scrollToBottom();
-
     }
 
-    // Show the main GPT explanation
+    // Show the main GPT explanation, if present
     if (data.explanation) {
         chatbox.innerHTML += `<p class="bot-message">${data.explanation}</p>`;
         scrollToBottom();
-
     }
 
-    // If there's a mismatch note, display it in its own bot message
+    // If there's a mismatch note, display it
     if (data.note) {
         chatbox.innerHTML += `<p class="bot-message">${data.note}</p>`;
         scrollToBottom();
     }
 
-    // Finally, ask for feedback
+    // Finally, if there's an ask_feedback prompt, show it and set waitingForFeedback
     if (data.ask_feedback) {
         chatbox.innerHTML += `<p class="bot-message">${data.ask_feedback}</p>`;
         scrollToBottom();
         waitingForFeedback = true;
     }
 }
+
 function scrollToBottom() {
     let chatbox = document.getElementById("chatbox");
     chatbox.scrollTop = chatbox.scrollHeight;
