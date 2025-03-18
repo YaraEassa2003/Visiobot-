@@ -30,10 +30,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "saved_models", "visiobot_model.keras")
 PIPELINE_PATH = os.path.join(BASE_DIR, "saved_models", "preprocessing_pipeline.pkl")
 
-# Load model
 model = tf.keras.models.load_model(MODEL_PATH)
 
-# Load preprocessing pipeline
 preprocessing_pipeline = joblib.load(PIPELINE_PATH)
 scaler = preprocessing_pipeline["scaler"]
 feature_columns = preprocessing_pipeline["feature_columns"]
@@ -54,32 +52,26 @@ chart_type_mapping = {
 def preprocess_input(user_input):
     """Prepares user input using the saved preprocessing pipeline."""
 
-    # Standardize numerical values (Ensure both attributes are transformed together)
     standardized_values = scaler.transform(
         pd.DataFrame([[user_input["No_of_Attributes"], user_input["No_of_Records"]]],
                     columns=["No_of_Attributes", "No_of_Records"])
     )
     print("Training Mean & Std Dev:", scaler.mean_, scaler.scale_)
 
-    # Create an empty DataFrame with the correct feature structure
     input_df = pd.DataFrame(columns=feature_columns)
     input_df.loc[0] = 0  # Initialize all values to zero
 
-    # Insert standardized numerical values
     input_df["No_of_Attributes"] = standardized_values[0, 0]
     input_df["No_of_Records"] = standardized_values[0, 1]
 
-    # Apply One-Hot Encoding using `one_hot_columns` from the pipeline
     categorical_features = ["Data_Dimensions", "Primary_Variable (Data Type)", "Task (Purpose)", "Target Audience"]
     for feature in categorical_features:
         col_name = f"{feature}_{user_input[feature]}"
         if col_name in one_hot_columns:  # Ensure only valid columns are set
             input_df[col_name] = 1
 
-    # Fill missing values with 0 to maintain feature alignment
     input_df = input_df.fillna(0)
 
-    # Ensure final input matches model expectations
     expected_features = len(feature_columns)  # Use total features saved in pipeline
     final_input = input_df[feature_columns].to_numpy()[:, :expected_features]
 
@@ -100,16 +92,13 @@ def get_prediction(user_input):
     if input_data.shape[1] != expected_features:
         return "❌ Feature mismatch! Expected {}, but got {}.".format(expected_features, input_data.shape[1]), None
 
-    # Make prediction
     prediction = model.predict(input_data)[0]  # Get probability scores
 
-    # Rank all 8 visualizations based on probability scores (descending order)
     ranked_indices = np.argsort(prediction)[::-1]  # Sort in descending order
     ranked_visualizations = [(chart_type_mapping[i + 1], prediction[i]) for i in ranked_indices]
 
     print(f"🏆 Ranked Predictions: {ranked_visualizations}")  # Debugging
 
-    # Generate a plot for the highest-ranked visualization
     visualization_plot = generate_visualization(ranked_indices[0] + 1)
 
     return ranked_visualizations, visualization_plot  # Return ranked list with plot
