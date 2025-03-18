@@ -1,5 +1,4 @@
 import os
-import click
 import model_utils
 import dataset_utils
 import gpt_gateway
@@ -24,7 +23,7 @@ global_data = {
     "dataset_info": None,
     "dataset_uploaded": False,
     "dataset_path": None,
-    "recommendation_queue": None,  # will store ranked chart names
+    "recommendation_queue": None,  
     "current_index": 0
 }
 UPLOAD_FOLDER = "/workspaces/codespaces-models/visiobot-project/visiobot-backend/uploads"
@@ -102,18 +101,14 @@ def get_visualization():
             "Dataset Path": dataset_path
         }
         global_data["full_user_input"] = processed_data
-        # Use model_utils to get the ranked list of predictions
         ranked_predictions, _ = model_utils.get_prediction(processed_data)
-        # Example: ranked_predictions = [("Scatter Plot", 0.89), ("Line Chart", 0.07), ...]
 
         if not ranked_predictions:
             return jsonify({"error": "No valid predictions generated."}), 500
 
-        # Store them in global_data
         global_data["recommendation_queue"] = ranked_predictions
         global_data["current_index"] = 0
 
-        # Return the first recommendation
         return send_current_recommendation(processed_data)
 
     except ValueError as ve:
@@ -127,39 +122,30 @@ def next_visualization():
     """Route to handle user feedback and possibly move to the next best chart."""
     user_feedback = request.json.get("feedback", "").lower()
 
-    # Make sure we have a queue of recommendations
     if "recommendation_queue" not in global_data or global_data["recommendation_queue"] is None:
         return jsonify({"error": "No recommendation process in progress. Please start over."}), 400
 
     if "current_index" not in global_data:
         return jsonify({"error": "Missing current index in global_data."}), 400
 
-    # If user says "yes", we finalize the current recommendation
     if user_feedback == "yes":
-         #1) Get the final recommended chart from the queue
         chart_name, _ = global_data["recommendation_queue"][global_data["current_index"]]
-        # 2) Store it in global_data so we can use it for final plot
         global_data["final_chart_type"] = chart_name 
         try:
-        # Once the user is satisfied, read the dataset and ask for column selection via GPT.
-            # (You can call the new endpoint function directly.)
             return get_dataset_columns()  # This returns a JSON with the "final_message" field.
         except Exception as e:
             return jsonify({"error": f"Failed during final step: {str(e)}"}), 500
 
-    # If user says "no", we move to the next chart
     elif user_feedback == "no":
         global_data["current_index"] += 1
         if global_data["current_index"] >= len(global_data["recommendation_queue"]):
             return jsonify({
                 "message": "No more visualization options are left."
             })
-        # Return the next recommendation
         response_data = send_current_recommendation(global_data["full_user_input"], as_dict=True)
         response_data["pre_message"] = "Generating another visualization now..."
 
         return jsonify(response_data)
-    # If user typed something else
     return jsonify({"error": "Invalid feedback. Please respond with 'yes' or 'no'."}), 400
 
 def send_current_recommendation(user_input, as_dict=False):
@@ -202,10 +188,8 @@ def get_dataset_columns():
 
         df = pd.read_csv(dataset_path)
         columns = list(df.columns)
-        # Bold each column with <strong>
         formatted_columns = ", ".join([f"<strong>{col}</strong>" for col in columns])
 
-        # Instead of GPT, just return a fixed message:
         message = (
             f"The dataset you uploaded contains columns: {formatted_columns}. "
             "Which columns and what insights would you like to visualize?"
@@ -236,7 +220,6 @@ def final_plot():
         df = pd.read_csv(dataset_path)
         all_columns = list(df.columns)
 
-        # 1) Strict prompt to GPT
         prompt = (
             "Return only valid JSON. No extra text.\n"
             f"Columns: {', '.join(all_columns)}.\n"
@@ -248,12 +231,11 @@ def final_plot():
         gpt_response = gpt_gateway.handle_chat(prompt)
         print("🧠 GPT raw response:", repr(gpt_response))
 
-        # 2) Extract the JSON substring from GPT’s text using a regex
         match = re.search(r"\{.*?\}", gpt_response, re.DOTALL)
         if not match:
             return jsonify({"error": "GPT did not return a JSON object."}), 500
 
-        json_str = match.group(0)  # The first { ... } block
+        json_str = match.group(0) 
         try:
             parsed = json.loads(json_str)
         except json.JSONDecodeError:
@@ -264,7 +246,6 @@ def final_plot():
         if not x_axis or not y_axis:
             return jsonify({"error": "GPT JSON missing x_axis or y_axis."}), 500
 
-        # 3) Generate the plot using the final_chart_type
         plot_path = model_utils.generate_final_plot(df, x_axis, y_axis, final_chart_type)
 
         summary_stats = df.describe().to_string()
