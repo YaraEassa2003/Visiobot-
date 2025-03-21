@@ -261,10 +261,11 @@ button:active {
         let datasetInfo = null;
         let purpose = "";
         let audience = "";
-        let waitingForFeedback = false;  // <-- Declare this so no ReferenceError occurs
+        let waitingForFeedback = false;
         let waitingForColumns = false;
-        let waitingForRestart = false; // new global
-
+        let waitingForRestart = false;
+    
+        const chatbox = document.getElementById("chatbox");
     
         document.getElementById("userInput").addEventListener("keypress", function(event) {
             if (event.key === "Enter") {
@@ -275,37 +276,123 @@ button:active {
     
         async function sendMessage() {
             let userInput = document.getElementById("userInput").value.trim();
-            let chatbox = document.getElementById("chatbox");
-    
             if (!userInput) return;
     
             chatbox.innerHTML += `<p class="user-message">${userInput}</p>`;
-            scrollToBottom();
             document.getElementById("userInput").value = "";
-
-    if (waitingForRestart) {
-        waitingForRestart = false;
-        if (userInput.toLowerCase() === "yes") {
-            try {
-                let response = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/restart", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" }
-                });
-                let data = await response.json();
-                chatbox.innerHTML += `<p class="bot-message">${data.restart_message}</p>`;
-                scrollToBottom();
-                // Reset global states
-                datasetUploaded = false;
-                datasetInfo = null;
-                purpose = "";
-                audience = "";
-                waitingForFeedback = false;
-                waitingForColumns = false;
-            } catch (error) {
-                chatbox.innerHTML += `<p class="error-message">Error restarting the chat.</p>`;
-                console.error("Restart error:", error);
+            scrollToBottom();
+    
+            // 1) Check if user typed "hello"/"hi"/"hey" => call /chat
+            let lowerInput = userInput.toLowerCase();
+            if (["hello", "hi", "hey"].includes(lowerInput)) {
+                // Use absolute URL for /chat
+                try {
+                    let resp = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/chat", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ message: userInput })
+                    });
+                    let data = await resp.json();
+                    chatbox.innerHTML += `<p class="bot-message">${data.response}</p>`;
+                    scrollToBottom();
+                } catch (e) {
+                    console.error("Greeting error:", e);
+                }
+                return;
             }
-        } else if (userInput.toLowerCase() === "no") {
+    
+            // 2) If we are waiting for restart
+            if (waitingForRestart) {
+                handleRestartFlow(userInput);
+                return;
+            }
+    
+            // 3) If we are waiting for columns
+            if (waitingForColumns) {
+                handleColumns(userInput);
+                return;
+            }
+    
+            // 4) If we are waiting for feedback
+            if (waitingForFeedback) {
+                handleFeedback(userInput);
+                return;
+            }
+    
+            // 5) If no dataset is uploaded
+            if (!datasetUploaded) {
+                if (!lowerInput.includes("upload")) {
+                    // fallback to /chat if just chatting
+                    callChatFallback(userInput);
+                } else {
+                    // user wants to proceed but no dataset
+                    chatbox.innerHTML += `<p class="error-message">No dataset uploaded. Please use the upload button or type 'upload' to do so.</p>`;
+                }
+                scrollToBottom();
+                return;
+            }
+    
+            // 6) If we haven't captured purpose yet
+            if (!purpose) {
+                purpose = userInput;
+                chatbox.innerHTML += `<p class="bot-message">Who is your target audience? (Expert or Non-Expert)</p>`;
+                scrollToBottom();
+                return;
+            }
+    
+            // 7) If we haven't captured audience yet
+            if (!audience) {
+                audience = userInput;
+                chatbox.innerHTML += `<p class="bot-message">Processing your data... Generating a visualization recommendation now.</p>`;
+                scrollToBottom();
+                requestVisualization(purpose, audience);
+                return;
+            }
+    
+            // 8) Otherwise, fallback to /chat
+            callChatFallback(userInput);
+        }
+    
+        function callChatFallback(message) {
+            fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message })
+            })
+            .then(r => r.json())
+            .then(data => {
+                chatbox.innerHTML += `<p class="bot-message">${data.response}</p>`;
+                scrollToBottom();
+            })
+            .catch(e => console.error("Chat fallback error:", e));
+        }
+    
+        function scrollToBottom() {
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+    
+        async function handleRestartFlow(userInput) {
+            waitingForRestart = false;
+            if (userInput.toLowerCase() === "yes") {
+                try {
+                    let resp = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/restart", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" }
+                    });
+                    let data = await resp.json();
+                    chatbox.innerHTML += `<p class="bot-message">${data.restart_message}</p>`;
+                    scrollToBottom();
+                    datasetUploaded = false;
+                    datasetInfo = null;
+                    purpose = "";
+                    audience = "";
+                    waitingForFeedback = false;
+                    waitingForColumns = false;
+                } catch (e) {
+                    chatbox.innerHTML += `<p class="error-message">Error restarting: ${e}</p>`;
+                    scrollToBottom();
+                }
+            } else if (userInput.toLowerCase() === "no") {
             chatbox.innerHTML += `
                 <div id="intro-message">
                   <p>VisioBot has left the chat. Thank you for using our service!</p>
@@ -317,234 +404,173 @@ button:active {
             scrollToBottom();
             waitingForRestart = true;
         }
-        return;
     }
-            if (waitingForColumns) {
-    waitingForColumns = false;
-    try {
-        let response = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/final-plot", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_request: userInput })
-        });
-        let data = await response.json();
-
-        if (data.error) {
-            chatbox.innerHTML += `<p class="error-message">${data.error}</p>`;
-            scrollToBottom();
-        } else {
-            chatbox.innerHTML += `<p class="bot-message">${data.message}</p>`;
-            scrollToBottom();
-            if (data.plot_url) {
-                chatbox.innerHTML += `<img class="visualization-img" src="${data.plot_url}" alt="Final Plot" />`;
-                    }
-                
-                scrollToBottom();
-            }
-            if (data.plot_description) {
-                chatbox.innerHTML += `<p class="bot-message">${data.plot_description}</p>`;
+    
+        async function handleColumns(userInput) {
+            waitingForColumns = false;
+            try {
+                let resp = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/final-plot", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ user_request: userInput })
+                });
+                let data = await resp.json();
+    
+                if (data.error) {
+                    chatbox.innerHTML += `<p class="error-message">${data.error}</p>`;
                     scrollToBottom();
-            }
-
-            if (data.ask_restart) {
-    chatbox.innerHTML += `<p class="bot-message">${data.ask_restart}</p>`;
-    scrollToBottom();
-    waitingForRestart = true; 
-}
-    } catch (error) {
-        chatbox.innerHTML += `<p class="error-message">Error generating final plot.</p>`;
-        console.error("Final plot error:", error);
-    }
-    return;
-}
-
-            
-            if (waitingForFeedback) {
-                handleFeedback(userInput);
-                return;
-            }
-    
-            if (!datasetUploaded) {
-                chatbox.innerHTML += `<p class="error-message">No dataset uploaded. Please upload a dataset first.</p>`;
-                scrollToBottom();
-                return;
-            }
-    
-            if (!purpose) {
-                purpose = userInput;
-                chatbox.innerHTML += `<p class="bot-message">Who is your target audience? (Expert or Non-Expert)</p>`;
-                scrollToBottom();
-                return;
-            }
-    
-            if (!audience) {
-                audience = userInput;
-                chatbox.innerHTML += `<p class="bot-message">Processing your data... Generating a visualization recommendation now.</p>`;
-                scrollToBottom();
-
-
-                let requestData = {
-                    "Task (Purpose)": purpose.toLowerCase(),
-                    "Target Audience": audience.toLowerCase() === "expert" ? 1 : 0,
-                    "user_feedback": "no",      // For the initial request, "no" means “I am not asking for an alternative”
-                    "current_index": 0
-                };
-    
-                try {
-                    let response = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/get-visualization", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(requestData)
-                    });
-    
-                    let data = await response.json();
-                    displayVisualization(data);
-                } catch (error) {
-                    chatbox.innerHTML += `<p class="error-message">Error: Could not fetch visualization.</p>`;
-                    console.error("Visualization error:", error);
+                } else {
+                    chatbox.innerHTML += `<p class="bot-message">${data.message}</p>`;
+                    scrollToBottom();
+                    if (data.plot_url) {
+                        chatbox.innerHTML += `<img class="visualization-img" src="${data.plot_url}" alt="Final Plot" />`;
+                        scrollToBottom();
+                    }
+                    if (data.plot_description) {
+                        chatbox.innerHTML += `<p class="bot-message">${data.plot_description}</p>`;
+                        scrollToBottom();
+                    }
+                    if (data.ask_restart) {
+                        chatbox.innerHTML += `<p class="bot-message">${data.ask_restart}</p>`;
+                        scrollToBottom();
+                        waitingForRestart = true;
+                    }
                 }
-                return;
+            } catch (e) {
+                chatbox.innerHTML += `<p class="error-message">Error generating final plot: ${e}</p>`;
+                scrollToBottom();
             }
         }
     
         async function handleFeedback(feedback) {
+            waitingForFeedback = false;
             let chatbox = document.getElementById("chatbox");
-    
             if (feedback.toLowerCase() === "yes") {
                 chatbox.innerHTML += `<p class="bot-message">Great! Proceeding with the selected visualization.</p>`;
                 scrollToBottom();
-                waitingForFeedback = false;
                 try {
-                    let response = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/next-visualization", {
+                    let resp = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/next-visualization", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ feedback: "yes" })
-                        });
-                        let data = await response.json();
-                        displayVisualization(data);  // or handle the "final_message" from the server
-                    } catch (error) {
-                        chatbox.innerHTML += `<p class="error-message">Error fetching the final step.</p>`;
-                        scrollToBottom();
-                    }
-                    return;
-                    }
-    
-            if (feedback.toLowerCase() === "no") {
+                    });
+                    let data = await resp.json();
+                    displayVisualization(data);
+                } catch (e) {
+                    chatbox.innerHTML += `<p class="error-message">Error fetching final step: ${e}</p>`;
+                    scrollToBottom();
+                }
+            } else if (feedback.toLowerCase() === "no") {
                 try {
-                    let response = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/next-visualization", {
+                    let resp = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/next-visualization", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ feedback: "no" })
                     });
-    
-                    let data = await response.json();
+                    let data = await resp.json();
                     displayVisualization(data);
-                } catch (error) {
-                    chatbox.innerHTML += `<p class="error-message">Error fetching the next visualization.</p>`;
-                    scrollToBottom();
-                    console.error("Next visualization error:", error);
+                } catch (e) {
+                    chatbox.innerHTML += `<p class="error-message">Error fetching next visualization: ${e}</p>`;
                 }
-                return;
+            } else {
+                chatbox.innerHTML += `<p class="error-message">Please respond with "Yes" or "No".</p>`;
+                scrollToBottom();
+                waitingForFeedback = true;
             }
-    
-            chatbox.innerHTML += `<p class="error-message">Please respond with 'Yes' or 'No'.</p>`;
             scrollToBottom();
-
         }
     
         function displayVisualization(data) {
-    let chatbox = document.getElementById("chatbox");
-    waitingForFeedback = false;
-
-    if (data.pre_message) {
-        chatbox.innerHTML += `<p class="bot-message">${data.pre_message}</p>`;
-        scrollToBottom();
-    }
-
-
-    if (data.message && !data.prediction) {
-        chatbox.innerHTML += `<p class="bot-message">${data.message}</p>`;
-        scrollToBottom();
-        
-    }
-
-    if (data.ask_restart) {
-        chatbox.innerHTML += `<p class="bot-message">${data.ask_restart}</p>`;
-        scrollToBottom();
-        waitingForRestart = true;
-        return; 
-    }
-
-    if (data.final_message) {
-        chatbox.innerHTML += `<p class="bot-message">${data.final_message}</p>`;
-        waitingForColumns = true;
-        scrollToBottom();
-    }
-
-    if (data.prediction) {
-        chatbox.innerHTML += `<p class="bot-message">
-            Recommended Visualization: <strong>${data.prediction}</strong>
-        </p>`;
-        scrollToBottom();
-    }
-
-    if (data.explanation) {
-        chatbox.innerHTML += `<p class="bot-message">${data.explanation}</p>`;
-        scrollToBottom();
-    }
-
-    if (data.note) {
-        chatbox.innerHTML += `<p class="bot-message">${data.note}</p>`;
-        scrollToBottom();
-    }
-
-    if (data.ask_feedback) {
-        chatbox.innerHTML += `<p class="bot-message">${data.ask_feedback}</p>`;
-        scrollToBottom();
-        waitingForFeedback = true;
-    }
-}
-
-function scrollToBottom() {
-    let chatbox = document.getElementById("chatbox");
-    chatbox.scrollTop = chatbox.scrollHeight;
-}
+            let chatbox = document.getElementById("chatbox");
+            waitingForFeedback = false;
     
-        document.getElementById("file-upload").addEventListener("change", async function () {
+            if (data.pre_message) {
+                chatbox.innerHTML += `<p class="bot-message">${data.pre_message}</p>`;
+                scrollToBottom();
+            }
+            if (data.message && !data.prediction) {
+                chatbox.innerHTML += `<p class="bot-message">${data.message}</p>`;
+                scrollToBottom();
+            }
+            if (data.ask_restart) {
+                chatbox.innerHTML += `<p class="bot-message">${data.ask_restart}</p>`;
+                scrollToBottom();
+                waitingForRestart = true;
+                return;
+            }
+            if (data.final_message) {
+                chatbox.innerHTML += `<p class="bot-message">${data.final_message}</p>`;
+                waitingForColumns = true;
+                scrollToBottom();
+            }
+            if (data.prediction) {
+                chatbox.innerHTML += `<p class="bot-message">Recommended Visualization: <strong>${data.prediction}</strong></p>`;
+                scrollToBottom();
+            }
+            if (data.explanation) {
+                chatbox.innerHTML += `<p class="bot-message">${data.explanation}</p>`;
+                scrollToBottom();
+            }
+            if (data.note) {
+                chatbox.innerHTML += `<p class="bot-message">${data.note}</p>`;
+                scrollToBottom();
+            }
+            if (data.ask_feedback) {
+                chatbox.innerHTML += `<p class="bot-message">${data.ask_feedback}</p>`;
+                scrollToBottom();
+                waitingForFeedback = true;
+            }
+        }
+    
+        async function requestVisualization(purpose, audience) {
+            let requestData = {
+                "Task (Purpose)": purpose,
+                "Target Audience": audience
+            };
+            try {
+                let resp = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/get-visualization", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(requestData)
+                });
+                let data = await resp.json();
+                displayVisualization(data);
+            } catch (e) {
+                chatbox.innerHTML += `<p class="error-message">Error fetching visualization: ${e}</p>`;
+            }
+        }
+    
+        document.getElementById("file-upload").addEventListener("change", async function() {
             let file = this.files[0];
             if (!file) return;
+            chatbox.innerHTML += `<p class="user-message">Sending... ${file.name}</p>`;
+            scrollToBottom();
     
             let formData = new FormData();
             formData.append("file", file);
     
-            let chatbox = document.getElementById("chatbox");
-            chatbox.innerHTML += `<p class="user-message">Sending... ${file.name}</p>`;
-            scrollToBottom();
-
-    
             try {
-                let response = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/process-dataset", {
+                let resp = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/process-dataset", {
                     method: "POST",
                     body: formData,
                     credentials: "include"
                 });
-    
-                let data = await response.json();
+                let data = await resp.json();
                 datasetUploaded = true;
                 datasetInfo = data.dataset_details;
                 chatbox.innerHTML += `<p class="bot-message">Dataset uploaded successfully!</p>`;
                 scrollToBottom();
                 chatbox.innerHTML += `<p class="bot-message">What is the purpose of your visualization? (Distribution, Relationship, Comparison, Trends)</p>`;
                 scrollToBottom();
-
             } catch (error) {
                 chatbox.innerHTML += `<p class="error-message">Error: Dataset upload failed!</p>`;
                 scrollToBottom();
-
                 console.error("Upload error:", error);
             }
         });
     </script>
+    
+    
     
 </body>
 </html>
