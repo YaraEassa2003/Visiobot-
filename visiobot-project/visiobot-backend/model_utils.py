@@ -406,23 +406,27 @@ def generate_final_plot(df, x_axis, y_axis, chart_type):
         sns.scatterplot(x=df[x_axis], y=df[y_axis])
     elif "linked" in ctype:
         try:
-            # Create a small random graph
-            G = nx.erdos_renyi_graph(n=8, p=0.3, seed=42)
-
-            # Lay it out
-            pos = nx.spring_layout(G, seed=42)
-
-            # Draw
+            import networkx as nx
+            # Create a directed graph from the data:
+            G = nx.DiGraph()
+            # Use the values from the x_axis column to define nodes:
+            nodes = df[x_axis].tolist()
+            # Add edges connecting each consecutive node:
+            for i in range(len(nodes) - 1):
+                G.add_edge(nodes[i], nodes[i + 1])
+            # In case the dataset has only one record, add that node:
+            if len(nodes) == 1:
+                G.add_node(nodes[0])
+            # Generate a layout dynamically:
+            pos = nx.spring_layout(G)
             nx.draw_networkx_nodes(G, pos, node_color='skyblue', node_size=500)
             nx.draw_networkx_edges(G, pos, edge_color='gray')
             nx.draw_networkx_labels(G, pos, font_color='black')
-
-            plt.title("Linked Graph (Network Diagram Placeholder)")
+            plt.title("Linked Graph Based on Your Data")
             plt.axis("off")
-        except ImportError:
-            plt.text(0.5, 0.5, "Network Diagram not implemented (requires networkx)", ha="center")
         except Exception as e:
-            plt.text(0.5, 0.5, f"Network Diagram rendering failed: {e}", ha="center")
+            plt.text(0.5, 0.5, f"Linked Graph rendering failed: {e}", ha="center")
+
     elif "line" in ctype:
         sns.lineplot(x=df[x_axis], y=df[y_axis])
     else:
@@ -437,4 +441,83 @@ def generate_final_plot(df, x_axis, y_axis, chart_type):
     plt.close()
     return plot_path
 
+import gpt_gateway
+
+def normalize_target_audience(input_str):
+    """Normalize input to either 'Expert' or 'Non-Expert' using local keywords, else GPT."""
+    expert_terms = ['expert', 'ceo', 'executive', 'manager', 'director', 'analyst']
+    non_expert_terms = ['non-expert', 'novice', 'beginner', 'layman']
+
+    lower_input = input_str.lower()
+
+    # 1) Local Matching
+    if any(term in lower_input for term in expert_terms):
+        return "Expert"
+    elif any(term in lower_input for term in non_expert_terms):
+        return "Non-Expert"
+    else:
+        # 2) GPT Fallback
+        return classify_audience_with_gpt_fallback(input_str)
+
+
+def classify_audience_with_gpt_fallback(input_str):
+    """Calls GPT to classify the input as 'Expert' or 'Non-Expert'."""
+    prompt = (
+        "Classify the following input as either 'Expert' or 'Non-Expert' "
+        "based on the role or expertise implied. "
+        "If the input indicates high-level leadership (e.g. CEO, manager, etc.), classify as 'Expert'. "
+        "Return only one word: 'Expert' or 'Non-Expert'.\n"
+        f"Input: \"{input_str}\""
+    )
+    response = gpt_gateway.handle_chat(prompt).strip().lower()
+    
+    # If GPT returns an unexpected value, default to Non-Expert
+    if response not in ["expert", "non-expert"]:
+        # Last-chance fallback if we see 'ceo' or 'manager' in input
+        if "ceo" in input_str.lower() or "manager" in input_str.lower():
+            return "Expert"
+        return "Non-Expert"
+
+    return response.capitalize()
+
+
+def normalize_purpose(input_str):
+    """Normalize input for visualization purpose, else GPT fallback."""
+    distribution_terms = ['distribution', 'spread', 'proportion']
+    relationship_terms = ['relationship', 'correlation', 'association']
+    comparison_terms = ['comparison', 'compare']
+    trends_terms = ['trend', 'trends', 'trend analysis', 'evolution']
+
+    lower_input = input_str.lower()
+
+    # 1) Local Matching
+    if any(term in lower_input for term in distribution_terms):
+        return "distribution"
+    elif any(term in lower_input for term in relationship_terms):
+        return "relationship"
+    elif any(term in lower_input for term in comparison_terms):
+        return "comparison"
+    elif any(term in lower_input for term in trends_terms):
+        return "trends"
+    else:
+        # 2) GPT Fallback
+        return classify_purpose_with_gpt_fallback(input_str)
+
+
+def classify_purpose_with_gpt_fallback(input_str):
+    """Calls GPT to classify the purpose into distribution, relationship, comparison, or trends."""
+    prompt = (
+        "Classify the following input into one of the categories: "
+        "'distribution', 'relationship', 'comparison', or 'trends'. "
+        "Return only the category word in lowercase.\n"
+        f"Input: \"{input_str}\""
+    )
+    response = gpt_gateway.handle_chat(prompt).strip().lower()
+    
+    valid_purposes = ['distribution', 'relationship', 'comparison', 'trends']
+    if response not in valid_purposes:
+        # If GPT fails, fallback to the original user input (lowercased)
+        return input_str.lower()
+
+    return response
 

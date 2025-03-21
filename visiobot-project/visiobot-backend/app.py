@@ -91,18 +91,24 @@ def get_visualization():
         return jsonify({"error": "Dataset path not found. Please re-upload."}), 400
 
     try:
+        # Use GPT-based classification to normalize the inputs.
+        # Correct calls that match model_utils.py:
+        normalized_purpose = model_utils.normalize_purpose(data["Task (Purpose)"])
+        normalized_audience = model_utils.normalize_target_audience(data["Target Audience"])
+
+
         processed_data = {
             "Data_Dimensions": dataset_info["Data_Dimensions"],
             "No_of_Attributes": dataset_info["No_of_Attributes"],
             "No_of_Records": dataset_info["No_of_Records"],
             "Primary_Variable (Data Type)": dataset_info["Primary_Variable (Data Type)"],
-            "Task (Purpose)": str(data["Task (Purpose)"]).lower(),
-            "Target Audience": "Expert" if data["Target Audience"] == 1 else "Non-Expert",
+            "Task (Purpose)": normalized_purpose,
+            "Target Audience": normalized_audience,
             "Dataset Path": dataset_path
         }
         global_data["full_user_input"] = processed_data
-        ranked_predictions, _ = model_utils.get_prediction(processed_data)
 
+        ranked_predictions, _ = model_utils.get_prediction(processed_data)
         if not ranked_predictions:
             return jsonify({"error": "No valid predictions generated."}), 500
 
@@ -278,23 +284,61 @@ Use direct, confident language (e.g., "The plot shows...") and avoid numbering y
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    """Guides the user through the visualization recommendation process."""
-    user_message = request.json.get("message", "").lower()
+    """
+    A stricter chat flow with a GPT fallback if the GPT call fails.
+    """
+    user_message = request.json.get("message", "").strip()
+    msg_lower = user_message.lower()
 
-    if "upload" in user_message or "dataset" in user_message:
+    greetings = ["hello", "hi", "hey"]
+    if msg_lower in greetings:
+        greeting_prompt = (
+            "You are VisioBot, a data visualization assistant. "
+            "The user just said hello. Greet them warmly but briefly. "
+            "Tell them they need to upload a dataset, specify purpose, and specify audience. "
+            "End by inviting them to upload."
+        )
+        try:
+            # If GPT works, great
+            response = gpt_gateway.handle_chat(greeting_prompt)
+        except Exception as e:
+            # Fallback if GPT fails
+            print(f"❌ GPT error: {e}")
+            response = (
+                "Hello! I’m VisioBot. Currently I’m unable to use GPT, "
+                "but please upload your dataset, specify the purpose, and specify your audience."
+            )
+        return jsonify({"response": response})
+
+    # If not a greeting, handle the rest of the flow:
+    if "upload" in msg_lower or "dataset" in msg_lower:
         return jsonify({"response": "Please upload your dataset to begin."})
-
-    elif "purpose" in user_message:
-        return jsonify({"response": "What is the purpose of your visualization? (e.g., comparison, distribution, trend analysis)"})
-
-    elif "audience" in user_message:
+    elif "purpose" in msg_lower:
+        return jsonify({"response": "What is the purpose of your visualization? (Distribution, Relationship, Comparison, Trends)"})
+    elif "audience" in msg_lower:
         return jsonify({"response": "Who is your target audience? (Expert or Non-Expert)"})
+    elif "done" in msg_lower or "generate" in msg_lower:
+        return jsonify({"response": "Processing your data... Generating a visualization now."})
 
-    elif "done" in user_message or "generate" in user_message:
-        return jsonify({"response": "Processing your data... Generating visualization now."})
+    # Off-topic fallback:
+    fallback_prompt = (
+        "You are VisioBot, a helpful data visualization assistant. "
+        "The user said: '{user_message}'. Respond naturally, but do NOT recommend chart types. "
+        "If they want a visualization, they must follow the flow: upload → purpose → audience → done."
+        "Do NOT converse much your purpose here is to only make the user feel that they are chatting with a human expert."
+        "If they say anything else, remind them of the flow and that this is the way they can see best recommendations."
+    ).format(user_message=user_message)
 
-    else:
-        return jsonify({"response": "I can guide you through the process, but I won't generate a recommendation myself. Let's start by uploading your dataset."})
+    try:
+        conversation_reply = gpt_gateway.handle_chat(fallback_prompt)
+    except Exception as e:
+        print(f"❌ GPT error: {e}")
+        conversation_reply = (
+            "I can't help further. If you want to proceed, "
+            "please upload your dataset, specify purpose, and specify audience."
+        )
+
+    return jsonify({"response": conversation_reply})
 
 
 @app.route("/restart", methods=["POST"])
