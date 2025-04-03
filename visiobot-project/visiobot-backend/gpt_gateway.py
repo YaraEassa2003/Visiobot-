@@ -25,3 +25,4 @@ def handle_chat(user_message):
     )
 
     return response.choices[0].message.content.strip()
+                                                       

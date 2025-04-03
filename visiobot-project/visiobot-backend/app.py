@@ -91,12 +91,8 @@ def get_visualization():
         return jsonify({"error": "Dataset path not found. Please re-upload."}), 400
 
     try:
-        # Use GPT-based classification to normalize the inputs.
-        # Correct calls that match model_utils.py:
         normalized_purpose = model_utils.normalize_purpose(data["Task (Purpose)"])
         normalized_audience = model_utils.normalize_target_audience(data["Target Audience"])
-
-
         processed_data = {
             "Data_Dimensions": dataset_info["Data_Dimensions"],
             "No_of_Attributes": dataset_info["No_of_Attributes"],
@@ -310,7 +306,6 @@ def chat():
             )
         return jsonify({"response": response})
 
-    # If not a greeting, handle the rest of the flow:
     if "upload" in msg_lower or "dataset" in msg_lower:
         return jsonify({"response": "Please upload your dataset to begin."})
     elif "purpose" in msg_lower:
@@ -320,7 +315,6 @@ def chat():
     elif "done" in msg_lower or "generate" in msg_lower:
         return jsonify({"response": "Processing your data... Generating a visualization now."})
 
-    # Off-topic fallback:
     fallback_prompt = (
         "You are VisioBot, a helpful data visualization assistant. "
         "The user said: '{user_message}'. Respond naturally, but do NOT recommend chart types. "
