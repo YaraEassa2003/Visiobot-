@@ -127,24 +127,18 @@ def generate_visualization(chart_type):
         plt.title("Histogram (Placeholder)")
 
     elif chart_type == 2:
-        # Line Chart
         x = np.arange(50)
         y = np.random.randn(50).cumsum()  # cumsum to simulate a trending line
         plt.plot(x, y, marker="o", linestyle="-", color="green")
         plt.title("Line Chart (Placeholder)")
 
     elif chart_type == 3:
-    # Linked Graph as a NETWORK DIAGRAM using NetworkX
         try:
             
-            # For demonstration, generate a small random graph
-            # Replace with your own data if you have adjacency info
             G = nx.erdos_renyi_graph(n=8, p=0.3, seed=42)
             
-            # Spring layout positions nodes in a visually appealing way
             pos = nx.spring_layout(G, seed=42)
             
-            # Draw nodes, edges, and labels
             nx.draw_networkx_nodes(G, pos, node_color='skyblue', node_size=500)
             nx.draw_networkx_edges(G, pos, edge_color='gray')
             nx.draw_networkx_labels(G, pos, font_color='black')
@@ -152,13 +146,11 @@ def generate_visualization(chart_type):
             plt.title("Linked Graph (Network Diagram Placeholder)")
             plt.axis('off')
         except ImportError:
-            # Fallback if networkx isn't installed
             plt.text(0.5, 0.5, "Network Diagram not implemented (requires networkx)", ha="center")
         except Exception as e:
             plt.text(0.5, 0.5, f"Network Diagram rendering failed: {e}", ha="center")
 
     elif chart_type == 4:
-        # Actual MAP rendering using GeoPandas
         try:
             
             shapefile_path = os.path.join(DATA_DIR, "ne_110m_admin_0_countries.shp")
@@ -168,16 +160,11 @@ def generate_visualization(chart_type):
             plt.axis('off')
             
         except Exception as e:
-            # Fallback if something goes wrong
             plt.text(0.5, 0.5, f"Map rendering failed: {e}", ha="center")
 
     elif chart_type == 5:
-        # Parallel Coordinates
-        # We'll do a simplified version if we don't have a real dataset
-        # In a real scenario, you'd use `parallel_coordinates(df, class_column=...)`
         try:
             from pandas.plotting import parallel_coordinates
-            # Create a small random DataFrame for demonstration
             data = pd.DataFrame({
                 "Feature1": np.random.randn(10),
                 "Feature2": np.random.randn(10),
@@ -190,23 +177,18 @@ def generate_visualization(chart_type):
             plt.text(0.5, 0.5, "Parallel Coordinates not implemented", ha="center")
 
     elif chart_type == 6:
-        # Pie Chart
-        # We'll use random proportions that sum to 1
         data = np.random.randint(1, 10, 4)
         labels = [f"Cat {i+1}" for i in range(4)]
         plt.pie(data, labels=labels, autopct="%1.1f%%")
         plt.title("Pie Chart (Placeholder)")
 
     elif chart_type == 7:
-        # Scatter Plot
         x = np.random.randn(50)
         y = np.random.randn(50)
         plt.scatter(x, y, color="purple", alpha=0.5)
         plt.title("Scatter Plot (Placeholder)")
 
     elif chart_type == 8:
-        # Treemap
-        # We'll try squarify if available; otherwise, show text
         try:
             import squarify
             values = np.random.randint(1, 30, 5)
@@ -219,7 +201,6 @@ def generate_visualization(chart_type):
     else:
         plt.text(0.5, 0.5, "Unknown Chart Type", fontsize=12, ha="center")
 
-    # Save and return path
     plot_path = os.path.join(PLOT_DIR, "generated_visualization.png")
     plt.savefig(plot_path)
     plt.close()
@@ -231,7 +212,6 @@ def get_explanation(prediction, user_input):
     via GitHub AI Inference, ensuring that <strong> tags are used
     for bold text rather than **.
     """
-    # Mapping of each chart type to its typical audience
     typical_audience = {
         "Histogram": "non-expert",
         "Line Chart": "non-expert",
@@ -245,27 +225,21 @@ def get_explanation(prediction, user_input):
 
     raw_audience = user_input.get("Target Audience", "non-expert")
     if isinstance(raw_audience, int):
-        # If it's 1 => Expert, else => Non-Expert
         user_audience = "Expert" if raw_audience == 1 else "Non-Expert"
     else:
-        # Convert user input to a single lowercase string without hyphens/spaces
-        # e.g. "non-expert" -> "nonexpert", "expert" -> "expert"
+        
         norm = raw_audience.lower().replace("-", "").replace(" ", "")
         if norm == "expert":
             user_audience = "Expert"
         else:
-            # Anything else is treated as "nonexpert"
             user_audience = "Non-Expert"
 
-    # 2) Find the recommended chart's typical audience, e.g. "expert" or "non-expert"
     recommended_aud = typical_audience.get(prediction, "non-expert")
-    # We'll convert it to "Expert"/"Non-Expert" for final display
     if recommended_aud.lower() == "expert":
         recommended_audience = "Expert"
     else:
         recommended_audience = "Non-Expert"
 
-    # Build a note if there's a mismatch
     note_html = ""
     if recommended_audience != user_audience:
         note_html = (
@@ -274,7 +248,6 @@ def get_explanation(prediction, user_input):
             f"based on my analysis, {prediction} appears to best suit your dataset's characteristics."
         )
 
-    # Construct prompt for GPT
     prompt = f"""
 Explain why a <strong>{prediction}</strong> is the best choice based on the dataset details below.
 
@@ -299,7 +272,6 @@ Use <strong> tags for bold text, and do not use ** for bolding.
     """
 
     try:
-        # Use gpt_gateway instead of a local OpenAI client
         explanation = gpt_gateway.handle_chat(prompt)
         print(f"🧠 GPT Explanation: {explanation}")
 
@@ -307,11 +279,10 @@ Use <strong> tags for bold text, and do not use ** for bolding.
         explanation = f"⚠️ GPT explanation could not be generated due to an error: {str(e)}"
         print(f"❌ GPT Error: {e}")
 
-    # Return both the main explanation and the note separately
     return explanation, note_html
 
 def generate_final_plot(df, x_axis, y_axis, chart_type):
-    plt.close("all")  # <--- forcibly close any old figures
+    plt.close("all") 
     plt.figure(figsize=(8, 5))
     ctype = chart_type.lower()
     print("DEBUG: ctype =", ctype)
@@ -319,7 +290,6 @@ def generate_final_plot(df, x_axis, y_axis, chart_type):
     if "histogram" in ctype:
         plt.hist(df[x_axis], bins=10, color="blue", alpha=0.7)
     elif "pie" in ctype:
-        # Assume df[x_axis] contains categories and df[y_axis] the numeric values
         data = df.groupby(x_axis)[y_axis].sum()
         plt.pie(data, labels=data.index, autopct="%1.1f%%")
     
@@ -328,11 +298,9 @@ def generate_final_plot(df, x_axis, y_axis, chart_type):
         try:
             plt.close("all")
             print("DEBUG: Entered the Treemap block!")
-            # Group by category and sum the numeric values
             grouped = df.groupby(x_axis)[y_axis].sum().reset_index()
             print("DEBUG Treemap grouping:\n", grouped)
             
-            # Check if we have more than one category:
             if grouped.shape[0] < 2:
                 plt.text(0.5, 0.5, "Not enough categories for a treemap", ha="center")
             else:
@@ -363,27 +331,24 @@ def generate_final_plot(df, x_axis, y_axis, chart_type):
             world = gpd.read_file(SHAPEFILE_PATH)
             merged = world.merge(df, left_on="ADMIN", right_on=x_axis, how="left")
 
-           # merged already has your shapefile and user data combined
             ax = merged.plot(
                 column=y_axis,
                 cmap='OrRd',
                 legend=True,
                 edgecolor='black',
-                figsize=(10, 6)  # optional for bigger plot
+                figsize=(10, 6) 
             )
 
-            # Filter out rows that have no match in the user's dataset
-            # i.e., no population data or whatever your y_axis is
+           
             subset = merged[~merged[y_axis].isna()]
 
-            # Now label only those countries that have user data
             for idx, row in subset.iterrows():
                 if row.geometry is not None:
                     centroid = row.geometry.centroid
                     ax.text(
                         x=centroid.x,
                         y=centroid.y,
-                        s=str(row[x_axis]),  # e.g. the user’s country name from your dataset
+                        s=str(row[x_axis]), 
                         fontsize=5,
                         ha='center',
                         va='center'
@@ -396,7 +361,6 @@ def generate_final_plot(df, x_axis, y_axis, chart_type):
 
 
     elif "parallel" in ctype:
-        # For parallel coordinates, you might need a dedicated function (e.g. pandas.plotting.parallel_coordinates)
         try:
             from pandas.plotting import parallel_coordinates
             parallel_coordinates(df, class_column=x_axis)
@@ -407,17 +371,12 @@ def generate_final_plot(df, x_axis, y_axis, chart_type):
     elif "linked" in ctype:
         try:
             import networkx as nx
-            # Create a directed graph from the data:
             G = nx.DiGraph()
-            # Use the values from the x_axis column to define nodes:
             nodes = df[x_axis].tolist()
-            # Add edges connecting each consecutive node:
             for i in range(len(nodes) - 1):
                 G.add_edge(nodes[i], nodes[i + 1])
-            # In case the dataset has only one record, add that node:
             if len(nodes) == 1:
                 G.add_node(nodes[0])
-            # Generate a layout dynamically:
             pos = nx.spring_layout(G)
             nx.draw_networkx_nodes(G, pos, node_color='skyblue', node_size=500)
             nx.draw_networkx_edges(G, pos, edge_color='gray')
@@ -444,20 +403,19 @@ def generate_final_plot(df, x_axis, y_axis, chart_type):
 import gpt_gateway
 
 def normalize_target_audience(input_str):
-    """Normalize input to either 'Expert' or 'Non-Expert' using local keywords, else GPT."""
-    expert_terms = ['expert', 'ceo', 'executive', 'manager', 'director', 'analyst']
-    non_expert_terms = ['non-expert', 'novice', 'beginner', 'layman']
+    """Normalize input to either 'Expert' or 'Non-Expert'."""
+    lower_input = input_str.lower().replace("-", " ").strip()
 
-    lower_input = input_str.lower()
+    non_expert_terms = ["non expert", "nonexpert", "novice", "beginner", "layman"]
+    if any(term in lower_input for term in non_expert_terms):
+        return "Non-Expert"
 
-    # 1) Local Matching
+    expert_terms = ["expert", "ceo", "executive", "manager", "director", "analyst"]
     if any(term in lower_input for term in expert_terms):
         return "Expert"
-    elif any(term in lower_input for term in non_expert_terms):
-        return "Non-Expert"
-    else:
-        # 2) GPT Fallback
-        return classify_audience_with_gpt_fallback(input_str)
+
+    return classify_audience_with_gpt_fallback(input_str)
+
 
 
 def classify_audience_with_gpt_fallback(input_str):
@@ -471,9 +429,7 @@ def classify_audience_with_gpt_fallback(input_str):
     )
     response = gpt_gateway.handle_chat(prompt).strip().lower()
     
-    # If GPT returns an unexpected value, default to Non-Expert
     if response not in ["expert", "non-expert"]:
-        # Last-chance fallback if we see 'ceo' or 'manager' in input
         if "ceo" in input_str.lower() or "manager" in input_str.lower():
             return "Expert"
         return "Non-Expert"
@@ -490,7 +446,6 @@ def normalize_purpose(input_str):
 
     lower_input = input_str.lower()
 
-    # 1) Local Matching
     if any(term in lower_input for term in distribution_terms):
         return "distribution"
     elif any(term in lower_input for term in relationship_terms):
@@ -500,7 +455,6 @@ def normalize_purpose(input_str):
     elif any(term in lower_input for term in trends_terms):
         return "trends"
     else:
-        # 2) GPT Fallback
         return classify_purpose_with_gpt_fallback(input_str)
 
 
@@ -516,7 +470,6 @@ def classify_purpose_with_gpt_fallback(input_str):
     
     valid_purposes = ['distribution', 'relationship', 'comparison', 'trends']
     if response not in valid_purposes:
-        # If GPT fails, fallback to the original user input (lowercased)
         return input_str.lower()
 
     return response

@@ -282,10 +282,8 @@ button:active {
             document.getElementById("userInput").value = "";
             scrollToBottom();
     
-            // 1) Check if user typed "hello"/"hi"/"hey" => call /chat
             let lowerInput = userInput.toLowerCase();
             if (["hello", "hi", "hey"].includes(lowerInput)) {
-                // Use absolute URL for /chat
                 try {
                     let resp = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/chat", {
                         method: "POST",
@@ -301,38 +299,31 @@ button:active {
                 return;
             }
     
-            // 2) If we are waiting for restart
             if (waitingForRestart) {
                 handleRestartFlow(userInput);
                 return;
             }
     
-            // 3) If we are waiting for columns
             if (waitingForColumns) {
                 handleColumns(userInput);
                 return;
             }
     
-            // 4) If we are waiting for feedback
             if (waitingForFeedback) {
                 handleFeedback(userInput);
                 return;
             }
     
-            // 5) If no dataset is uploaded
             if (!datasetUploaded) {
                 if (!lowerInput.includes("upload")) {
-                    // fallback to /chat if just chatting
                     callChatFallback(userInput);
                 } else {
-                    // user wants to proceed but no dataset
                     chatbox.innerHTML += `<p class="error-message">No dataset uploaded. Please use the upload button or type 'upload' to do so.</p>`;
                 }
                 scrollToBottom();
                 return;
             }
     
-            // 6) If we haven't captured purpose yet
             if (!purpose) {
                 purpose = userInput;
                 chatbox.innerHTML += `<p class="bot-message">Who is your target audience? (Expert or Non-Expert)</p>`;
@@ -340,7 +331,6 @@ button:active {
                 return;
             }
     
-            // 7) If we haven't captured audience yet
             if (!audience) {
                 audience = userInput;
                 chatbox.innerHTML += `<p class="bot-message">Processing your data... Generating a visualization recommendation now.</p>`;
@@ -349,7 +339,6 @@ button:active {
                 return;
             }
     
-            // 8) Otherwise, fallback to /chat
             callChatFallback(userInput);
         }
     
