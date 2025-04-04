@@ -19,21 +19,66 @@
         
 
         #chat-container {
-            width: 50%;
-            background-color: #1b263b;
-            border-radius: 10px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
-        }
+            position: relative;
+    width: 90%;
+    max-width: 800px; /* Adjust max-width as needed */
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #1b263b;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
+}
+/* Make the header a flex container */
+#chat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 60px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--blue-light);
+}
 
-        #chat-header {
-            display: flex;
-            align-items: center;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--blue-light);
-        }
+/* Keep the logo left-aligned */
+.header-left {
+    display: flex;
+    align-items: center;
+}
+
+/* Keep the refresh button right-aligned */
+.header-right {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+#refresh-button {
+    position: absolute;
+    top: 10px;      /* Adjust vertical spacing as desired */
+    right: 10px;    /* Adjust horizontal spacing as desired */
+    background-color: transparent;
+    border: none;
+    border-radius: 0; /* Square by default */
+    padding: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, border-radius 0.2s ease-in-out;
+}
+
+/* Hover effect: slightly darker background and circular shape */
+#refresh-button:hover {
+    background-color: #24354d;
+    border-radius: 50%;
+}
+#refresh-button:active {
+    transform: scale(0.9);
+}
+
+/* SVG icon inside the refresh button */
+#refresh-button svg {
+    width: 24px;
+    height: 24px;
+    fill: white;
+}
+
         
         #logo {
     width: 100px; 
@@ -52,20 +97,30 @@
         }
 
         #chatbox {
-            height: 400px;
-            border-radius: 10px;
-            overflow-y: auto;
-            padding: 10px;
-            background-color: #0d1b2a;
-            color: #fff;
-            scrollbar-width: thin;
-            scrollbar-color: #3b5278 #0d1b2a; 
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start; 
-            overflow-y: auto;
-        }
+    height: 60vh;  /* 60% of the viewport height */
+    min-height: 300px;
+    max-height: 600px;
+    border-radius: 10px;
+    overflow-y: auto;
+    padding: 10px;
+    background-color: #0d1b2a;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
 
+/* Adjustments for mobile devices */
+@media (max-width: 600px) {
+    #chat-container {
+        width: 90%;
+        padding: 10px;
+    }
+    #chatbox {
+        height: 50vh;
+        
+    }
+}
 #chatbox::-webkit-scrollbar {
     width: 6px;
     border-radius: 10px; 
@@ -104,10 +159,14 @@
             margin-top: 10px;
         }
 
+        
+
         .visualization-img {
-            max-width: 100%;
-            border-radius: 10px;
-            margin-top: 10px;
+        display: block;
+        width: 100%;
+        max-height: 400px;    /* Limit height so it doesn't fill entire chat */
+        border-radius: 8px;
+        margin: 0 auto;
         }
 
 
@@ -224,6 +283,71 @@ button:active {
             margin-top: 10px; 
         }
 
+/* Reuse your .bot-message styling, but add display:flex for the dots */
+.bot-message.typing-indicator {
+  display: inline-flex;         /* allow dots to appear in a row */
+  background-color: #14213d;    /* same as your existing bot messages */
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 12px;
+  max-width: 70%;
+  word-wrap: break-word;
+  white-space: normal;
+  text-align: left;
+  margin: 6px 5px;
+  align-self: flex-start;       /* appear on the left side like other bot msgs */
+}
+
+/* The animated dots */
+.bot-message.typing-indicator .dot {
+  background-color: #fff;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin: 0 2px;
+  opacity: 0.2;
+  animation: blink 1.4s infinite both;
+}
+
+/* Delay for the second and third dot to create the "moving" effect */
+.bot-message.typing-indicator .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.bot-message.typing-indicator .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* Keyframes for blinking dots */
+@keyframes blink {
+  0%   { opacity: 0.2; }
+  20%  { opacity: 1;   }
+  100% { opacity: 0.2; }
+}
+.download-wrapper {
+  position: relative;
+  display: inline-block; /* Needed so that the icon is positioned relative to the image */
+  max-width: 90%;        /* Adjust as needed to make the image slightly smaller than the chatbox */
+  margin: 10px auto;
+  text-decoration: none; /* Remove underline */
+}
+
+.download-icon {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: none;  /* No background */
+  border: none;      /* No border */
+  cursor: pointer;
+  padding: 5px;
+  z-index: 10;
+}
+
+.download-icon svg {
+  width: 24px;
+  height: 24px;
+  fill: #000;  /* Black arrow */
+}
+
 
 
     </style>
@@ -231,10 +355,24 @@ button:active {
 <body>
 
     <div id="chat-container">
+        
+        <!-- Refresh button at the top-right of the container -->
+        <button id="refresh-button" class="header-btn" onclick="refreshPage()">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 .34-.03.67-.08 1h2.02c.05-.33.06-.66.06-1 0-4.42-3.58-8-8-8zm-6 7c0-.34.03-.67.08-1H4.06c-.05.33-.06.66-.06 1 0 4.42 3.58 8 8 8v3l4-4-4-4v3c-3.31 0-6-2.69-6-6z" fill="white"/>
+            </svg>
+        </button>
+
         <!-- HEADER -->
         <div id="chat-header">
-            <img id="logo" src="visiobot logo.png" alt="VisioBot Logo">
+            <!-- Left side: logo -->
+            <div class="header-left">
+                <img id="logo" src="visiobot logo.png" alt="VisioBot Logo">
+            </div>
+            <!-- ... any other header elements here ... -->
         </div>
+        
+        
 
         <div id="chatbox">
             <div id="intro-message">
@@ -264,6 +402,8 @@ button:active {
         let waitingForFeedback = false;
         let waitingForColumns = false;
         let waitingForRestart = false;
+        let waitingForReuse = false;
+
     
         const chatbox = document.getElementById("chatbox");
     
@@ -285,12 +425,11 @@ button:active {
             let lowerInput = userInput.toLowerCase();
             if (["hello", "hi", "hey"].includes(lowerInput)) {
                 try {
-                    let resp = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/chat", {
+                    let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/chat", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ message: userInput })
                     });
-                    let data = await resp.json();
                     chatbox.innerHTML += `<p class="bot-message">${data.response}</p>`;
                     scrollToBottom();
                 } catch (e) {
@@ -298,7 +437,12 @@ button:active {
                 }
                 return;
             }
-    
+
+            if (waitingForReuse) {
+                handleReuseFlow(userInput);
+                return;
+            }
+
             if (waitingForRestart) {
                 handleRestartFlow(userInput);
                 return;
@@ -343,32 +487,53 @@ button:active {
         }
     
         function callChatFallback(message) {
-            fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message })
-            })
-            .then(r => r.json())
-            .then(data => {
-                chatbox.innerHTML += `<p class="bot-message">${data.response}</p>`;
-                scrollToBottom();
-            })
-            .catch(e => console.error("Chat fallback error:", e));
-        }
+  addTypingIndicator();
+  fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message })
+  })
+  .then(r => r.json())
+  .then(data => {
+      removeTypingIndicator();
+      chatbox.innerHTML += `<p class="bot-message">${data.response}</p>`;
+      scrollToBottom();
+  })
+  .catch(e => {
+      removeTypingIndicator();
+      console.error("Chat fallback error:", e);
+  });
+}
+
     
         function scrollToBottom() {
             chatbox.scrollTop = chatbox.scrollHeight;
         }
+        async function fetchWithTyping(url, options) {
+            addTypingIndicator();
+            try {
+                let resp = await fetch(url, options);
+                let data = await resp.json();
+                // Optionally wait a short time to let the indicator show:
+                await new Promise(resolve => setTimeout(resolve, 500));
+                removeTypingIndicator();
+                return data;
+            } catch (e) {
+                removeTypingIndicator();
+                throw e;
+            }
+        }
+
+        
     
         async function handleRestartFlow(userInput) {
             waitingForRestart = false;
             if (userInput.toLowerCase() === "yes") {
                 try {
-                    let resp = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/restart", {
+                    let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/restart", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" }
                     });
-                    let data = await resp.json();
                     chatbox.innerHTML += `<p class="bot-message">${data.restart_message}</p>`;
                     scrollToBottom();
                     datasetUploaded = false;
@@ -395,15 +560,15 @@ button:active {
         }
     }
     
+    
         async function handleColumns(userInput) {
             waitingForColumns = false;
             try {
-                let resp = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/final-plot", {
+                let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/final-plot", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ user_request: userInput })
                 });
-                let data = await resp.json();
     
                 if (data.error) {
                     chatbox.innerHTML += `<p class="error-message">${data.error}</p>`;
@@ -411,15 +576,64 @@ button:active {
                 } else {
                     chatbox.innerHTML += `<p class="bot-message">${data.message}</p>`;
                     scrollToBottom();
-                    if (data.plot_url) {
-                        chatbox.innerHTML += `<img class="visualization-img" src="${data.plot_url}" alt="Final Plot" />`;
-                        scrollToBottom();
-                    }
+
+                    // If your backend returns a "plot_title" like "Map of population vs country", we build a safe filename:
+const safeFilename = data.plot_title
+  ? data.plot_title.replace(/\s+/g, '_').replace(/[^\w_]/g, '') + '.png'
+  : 'visualization.png';
+
+if (data.plot_url) {
+  chatbox.innerHTML += `
+    <span style="position: relative; display: inline-block; margin: 10px auto;">
+      <img 
+        class="visualization-img"
+        src="${data.plot_url}"
+        alt="${data.plot_title || 'Final Plot'}"
+        style="width: 100%; max-height: 400px; border-radius: 8px; margin: 0 auto; display: block;"
+      />
+      <!-- Download button on bottom-right -->
+      <button
+  style="
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background-color: rgba(0,0,0,0.5);
+    border: none;
+    border-radius: 50%;
+    padding: 5px;
+    cursor: pointer;
+  "
+  onmouseover="this.style.backgroundColor='lightgray'"
+  onmouseout="this.style.backgroundColor='rgba(0,0,0,0.5)'"
+  title="Download Visualization"
+  onclick="forceDownloadImage('${data.plot_url}', '${safeFilename}')"
+>
+  <!-- A typical downward arrow from Material Design -->
+  <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:#000;">
+    <path d="M19 9h-4V3H9v6H5l7 7 7-7z" />
+    <path d="M5 18h14v2H5z" />
+  </svg>
+</button>
+
+    </span>
+  `;
+  scrollToBottom();
+}
+
+
+
+
+                    
                     if (data.plot_description) {
                         chatbox.innerHTML += `<p class="bot-message">${data.plot_description}</p>`;
                         scrollToBottom();
                     }
-                    if (data.ask_restart) {
+                    if (data.ask_reuse) {
+                        chatbox.innerHTML += `<p class="bot-message">${data.ask_reuse}</p>`;
+                        scrollToBottom();
+                        waitingForReuse = true;
+                    }
+                    else if (data.ask_restart) {
                         chatbox.innerHTML += `<p class="bot-message">${data.ask_restart}</p>`;
                         scrollToBottom();
                         waitingForRestart = true;
@@ -438,12 +652,11 @@ button:active {
                 chatbox.innerHTML += `<p class="bot-message">Great! Proceeding with the selected visualization.</p>`;
                 scrollToBottom();
                 try {
-                    let resp = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/next-visualization", {
+                    let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/next-visualization", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ feedback: "yes" })
                     });
-                    let data = await resp.json();
                     displayVisualization(data);
                 } catch (e) {
                     chatbox.innerHTML += `<p class="error-message">Error fetching final step: ${e}</p>`;
@@ -451,12 +664,11 @@ button:active {
                 }
             } else if (feedback.toLowerCase() === "no") {
                 try {
-                    let resp = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/next-visualization", {
+                    let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/next-visualization", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ feedback: "no" })
                     });
-                    let data = await resp.json();
                     displayVisualization(data);
                 } catch (e) {
                     chatbox.innerHTML += `<p class="error-message">Error fetching next visualization: ${e}</p>`;
@@ -468,6 +680,35 @@ button:active {
             }
             scrollToBottom();
         }
+
+        async function handleReuseFlow(userInput) {
+    waitingForReuse = false;
+    if (userInput.toLowerCase() === "yes") {
+        try {
+            let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/reuse-dataset", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" }
+            });
+            // Depending on your get_dataset_columns endpoint response,
+            // you might have data.final_message or data.message containing the columns prompt.
+            chatbox.innerHTML += `<p class="bot-message">${data.final_message || data.message || "Please select the columns you want to visualize."}</p>`;
+            scrollToBottom();
+            waitingForColumns = true;
+        } catch (e) {
+            chatbox.innerHTML += `<p class="error-message">Error reusing dataset: ${e}</p>`;
+            scrollToBottom();
+        }
+    } else if (userInput.toLowerCase() === "no") {
+        // If the user does not want to reuse, then ask if they want to restart with a new dataset.
+        chatbox.innerHTML += `<p class="bot-message">Would you like to start over with a new dataset? (Yes/No)</p>`;
+        scrollToBottom();
+        waitingForRestart = true;
+    } else {
+        chatbox.innerHTML += `<p class="error-message">Please respond with "Yes" or "No".</p>`;
+        scrollToBottom();
+        waitingForReuse = true;
+    }
+}
     
         function displayVisualization(data) {
             let chatbox = document.getElementById("chatbox");
@@ -480,6 +721,12 @@ button:active {
             if (data.message && !data.prediction) {
                 chatbox.innerHTML += `<p class="bot-message">${data.message}</p>`;
                 scrollToBottom();
+            }
+            if (data.ask_reuse) {
+                chatbox.innerHTML += `<p class="bot-message">${data.ask_reuse}</p>`;
+                scrollToBottom();
+                waitingForReuse = true;
+                return;
             }
             if (data.ask_restart) {
                 chatbox.innerHTML += `<p class="bot-message">${data.ask_restart}</p>`;
@@ -504,6 +751,52 @@ button:active {
                 chatbox.innerHTML += `<p class="bot-message">${data.note}</p>`;
                 scrollToBottom();
             }
+            // If your backend returns a "plot_title" like "Map of population vs country", we build a safe filename:
+const safeFilename = data.plot_title
+  ? data.plot_title.replace(/\s+/g, '_').replace(/[^\w_]/g, '') + '.png'
+  : 'visualization.png';
+
+if (data.plot_url) {
+  chatbox.innerHTML += `
+    <span style="position: relative; display: inline-block; margin: 10px auto;">
+      <img 
+        class="visualization-img"
+        src="${data.plot_url}"
+        alt="${data.plot_title || 'Final Plot'}"
+        style="width: 100%; max-height: 400px; border-radius: 8px; margin: 0 auto; display: block;"
+      />
+      <!-- Download button on bottom-right -->
+      <button
+  style="
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background-color: none;
+    border: none;
+    border-radius: 50%;
+    padding: 5px;
+    cursor: pointer;
+  "
+  onmouseover="this.style.backgroundColor='lightgray'"
+  onmouseout="this.style.backgroundColor='transparent'"
+  title="Download Visualization"
+  onclick="forceDownloadImage('${data.plot_url}', '${safeFilename}')"
+>
+  <!-- A typical downward arrow from Material Design -->
+  <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:#000;">
+    <path d="M19 9h-4V3H9v6H5l7 7 7-7z" />
+    <path d="M5 18h14v2H5z" />
+  </svg>
+</button>
+
+    </span>
+  `;
+  scrollToBottom();
+}
+
+
+
+
             if (data.ask_feedback) {
                 chatbox.innerHTML += `<p class="bot-message">${data.ask_feedback}</p>`;
                 scrollToBottom();
@@ -517,12 +810,11 @@ button:active {
                 "Target Audience": audience
             };
             try {
-                let resp = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/get-visualization", {
+                let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/get-visualization", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(requestData)
                 });
-                let data = await resp.json();
                 displayVisualization(data);
             } catch (e) {
                 chatbox.innerHTML += `<p class="error-message">Error fetching visualization: ${e}</p>`;
@@ -539,12 +831,11 @@ button:active {
             formData.append("file", file);
     
             try {
-                let resp = await fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/process-dataset", {
+                let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/process-dataset", {
                     method: "POST",
                     body: formData,
                     credentials: "include"
                 });
-                let data = await resp.json();
                 datasetUploaded = true;
                 datasetInfo = data.dataset_details;
                 chatbox.innerHTML += `<p class="bot-message">Dataset uploaded successfully!</p>`;
@@ -557,6 +848,67 @@ button:active {
                 console.error("Upload error:", error);
             }
         });
+        function refreshPage() {
+            window.location.reload();
+        }
+        function addTypingIndicator() {
+  // Remove any existing indicator first
+  removeTypingIndicator();
+
+  // Create a <p> with both "bot-message" and "typing-indicator" classes
+  let indicator = document.createElement("p");
+  indicator.className = "bot-message typing-indicator";
+  indicator.id = "typingIndicator";
+
+  // Insert three dots inside
+  indicator.innerHTML = `
+    <span class="dot"></span>
+    <span class="dot"></span>
+    <span class="dot"></span>
+  `;
+
+  // Append to the chatbox
+  chatbox.appendChild(indicator);
+  scrollToBottom();
+}
+
+function removeTypingIndicator() {
+  let existing = document.getElementById("typingIndicator");
+  if (existing) {
+    existing.remove();
+  }
+}
+
+async function forceDownloadImage(url, filename) {
+  try {
+    const resp = await fetch(url, { mode: "cors" });
+    // If the response is opaque, you'll see a warning in the console.
+    const blob = await resp.blob();
+
+    // Create a temporary object URL for the blob.
+    const objectURL = URL.createObjectURL(blob);
+
+    // Create a hidden link element.
+    const link = document.createElement("a");
+    link.href = objectURL;
+    link.download = filename || "visualization.png";
+
+    // Append the link to the body.
+    document.body.appendChild(link);
+
+    // Programmatically click the link to trigger the download.
+    link.click();
+
+    // Remove the link and revoke the object URL.
+    document.body.removeChild(link);
+    URL.revokeObjectURL(objectURL);
+  } catch (err) {
+    console.error("Download failed:", err);
+  }
+}
+
+
+
     </script>
     
     
