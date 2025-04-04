@@ -272,11 +272,29 @@ Use direct, confident language (e.g., "The plot shows...") and avoid numbering y
             "message": f"Here is your {final_chart_type} for '{y_axis}' and '{x_axis}'.",
             "plot_description": plot_description.strip(),
             "plot_url": plot_url,
-            "ask_restart": "Would you like to start over with a new dataset? (Yes/No)"
+            "plot_title": f"{final_chart_type} of {y_axis} vs {x_axis}",  # New field!
+            "ask_reuse": "Would you like to visualize something else using this same dataset, purpose, and target audience preferences? (Yes/No)"
         })
+
+
 
     except Exception as e:
         return jsonify({"error": f"Failed to generate final plot: {str(e)}"}), 500
+
+@app.route("/reuse-dataset", methods=["POST"])
+def reuse_dataset():
+    """
+    Provides the user with a list of dataset columns to select new visualization axes,
+    using the same dataset, purpose, and target audience preferences.
+    """
+    if not global_data.get("dataset_path"):
+        return jsonify({"error": "No dataset found. Please upload a dataset first."}), 400
+    try:
+        # Reuse the existing get_dataset_columns function to ask the user for new column selections.
+        return get_dataset_columns()
+    except Exception as e:
+        return jsonify({"error": f"Failed to retrieve dataset columns: {str(e)}"}), 500
+
 
 @app.route("/chat", methods=["POST"])
 def chat():
