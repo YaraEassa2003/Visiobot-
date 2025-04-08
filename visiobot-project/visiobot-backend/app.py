@@ -346,8 +346,8 @@ def chat():
     except Exception as e:
         print(f"❌ GPT error: {e}")
         conversation_reply = (
-            "I can't help further. If you want to proceed, "
-            "please upload your dataset, specify purpose, and specify audience."
+            "Please follow the proper input process for best results. If you want to proceed, "
+            "upload your dataset, specify purpose, and specify audience. Click on the restart button if an error presists."
         )
 
     return jsonify({"response": conversation_reply})
