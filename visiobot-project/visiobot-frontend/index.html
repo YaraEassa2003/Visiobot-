@@ -667,7 +667,11 @@ if (data.plot_url) {
                 scrollToBottom();
             }
         }
-    
+        async function fetchWithoutTyping(url, options) {
+        const resp = await fetch(url, options);
+        return await resp.json();
+        }
+
         async function handleFeedback(feedback) {
             waitingForFeedback = false;
             let chatbox = document.getElementById("chatbox");
@@ -686,18 +690,28 @@ if (data.plot_url) {
                     scrollToBottom();
                 }
             } else if (feedback.toLowerCase() === "no") {
-                try {
-                    let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/next-visualization", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ feedback: "no" })
-                    });
-                    displayVisualization(data);
-                } catch (e) {
-                    chatbox.innerHTML += `<p class="error-message">Error fetching next visualization: ${e}</p>`;
-                    scrollToBottom();
-                }
-            } else {
+    chatbox.innerHTML += `<p class="bot-message">Generating another visualization now...</p>`;
+    scrollToBottom();
+    setTimeout(async () => {
+        // Add the typing indicator manually
+        addTypingIndicator();
+        try {
+            let data = await fetchWithoutTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/next-visualization", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ feedback: "no" })
+            });
+            removeTypingIndicator();
+            displayVisualization(data);
+        } catch (e) {
+            removeTypingIndicator();
+            chatbox.innerHTML += `<p class="error-message">Error fetching next visualization: ${e}</p>`;
+            scrollToBottom();
+        }
+    }, 300);
+}
+else {
+                removeTypingIndicator();
                 chatbox.innerHTML += `<p class="error-message">Please respond with "Yes" or "No".</p>`;
                 scrollToBottom();
                 waitingForFeedback = true;

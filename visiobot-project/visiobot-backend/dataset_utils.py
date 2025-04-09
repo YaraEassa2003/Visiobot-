@@ -1,22 +1,112 @@
 import pandas as pd
 import numpy as np
+from gpt_gateway import handle_chat
 
-def determine_dimension(data):
-    """Determines if the dataset is 1D, 2D, ND, or Hierarchical."""
+
+def determine_dimension(data, df=None, ask_gpt_for_hierarchy=False):
+    """
+    Decide if data is 1D, 2D, ND, or Hierarchical.
+    If ask_gpt_for_hierarchy=True, we'll attempt a GPT classification
+    using a structural summary of the CSV (df).
+    """
+
+    # If data is a NumPy array (typical path when CSV -> DataFrame -> .to_numpy()):
     if isinstance(data, np.ndarray):
-        if data.ndim == 1:
-            return "1D"
+        if data.ndim == 2 and data.shape[1] == 1:
+            dimension = "1D"
+        elif data.ndim == 1:
+            dimension = "1D"
         elif data.ndim == 2:
-            return "2D"
+            # We treat up to 3 columns as '2D'
+            dimension = "2D" if data.shape[1] <= 3 else "ND"
         else:
-            return "ND"
+            dimension = "ND"
+
+    # If data is a list (the old code path):
     elif isinstance(data, list):
         if all(isinstance(i, list) for i in data):
+            dimension = "Hierarchical"
+        else:
+            dimension = "1D"
+    else:
+        dimension = "Unknown"
+
+    # Optional step: Ask GPT if we want to see if the CSV is "Hierarchical."
+    # This only makes sense if we have the DataFrame 'df'.
+    if ask_gpt_for_hierarchy and df is not None and (dimension == "ND" or dimension == "2D"): 
+        if is_one_to_many_hierarchy(df):       # Summarize CSV structure for GPT:
+            print("[DEBUG] Invoking maybe_refine_to_hierarchical_with_gpt()...")
+            dimension_before = dimension
+            dimension = maybe_refine_to_hierarchical_with_gpt(dimension, df)
+            print(f"[DEBUG] dimension after GPT call: was '{dimension_before}', now '{dimension}'")
+        else:
+        # It's not hierarchical if there's no one-to-many structure
+            pass
+
+    return dimension
+
+def is_one_to_many_hierarchy(df):
+    cols = df.columns
+    if len(cols) < 2:
+        return False
+    
+    for i in range(len(cols) - 1):
+        parent_col = cols[i]
+        child_col = cols[i + 1]
+        
+        # For each (parent, child) pair, check if child belongs to >1 parent
+        combos = df[[parent_col, child_col]].drop_duplicates()
+        child_group = combos.groupby(child_col)[parent_col].nunique()
+        
+        # If ANY child value appears under more than one parent, not strictly hierarchical
+        if any(child_group > 1):
+            return False
+    return True
+
+
+def maybe_refine_to_hierarchical_with_gpt(current_dimension, df):
+    """
+    If current_dimension is '2D' or 'ND', we can ask GPT whether it might be hierarchical
+    based on structural patterns in the DataFrame.
+    Return the final dimension after GPT's response: either "Hierarchical" or original dimension.
+    """
+
+    # 1. Collect some structure info about the DataFrame
+    columns = df.columns.tolist()
+    # e.g. unique counts per column
+    cardinalities = {col: df[col].nunique() for col in columns}
+    # Sample first few rows (just to show GPT the shape)
+    sample_rows = df.head(10).to_dict(orient="records")  # A small sample
+
+    # 2. Build a prompt for GPT
+    prompt = f"""
+We have a CSV with {len(columns)} columns and {len(df)} rows (flattened table).
+Columns: {columns}
+
+Unique value counts:
+{cardinalities}
+
+Here is a sample of the first 10 rows (key-value pairs):
+{sample_rows}
+
+Only respond "Hierarchical" if there is a clear parent->child or multi-level structure 
+(e.g., Region->Country->City). If you are uncertain or it does not look strictly hierarchical, 
+respond "NotHierarchical". 
+Return one word only: "Hierarchical" or "NotHierarchical".
+"""
+
+    try:
+        gpt_response = handle_chat(prompt)
+        # Normalize GPT's response
+        response_lower = gpt_response.strip().lower()
+        if "hierarchical" in response_lower:
             return "Hierarchical"
         else:
-            return "1D"
-    else:
-        return "Unknown"
+            return current_dimension
+    except Exception as e:
+        print(f"GPT error: {e}")
+        # Fallback: keep original dimension
+        return current_dimension
 
 def detect_primary_variable(df):
     """
@@ -47,19 +137,25 @@ def detect_primary_variable(df):
     primary_variable = max(feature_types, key=lambda x: df[x].nunique(), default=None)
     return primary_variable, feature_types.get(primary_variable, "unknown")
 
-def extract_dataset_info(file_path):
+def extract_dataset_info(file_path, use_gpt_for_hierarchy=False):
     """Extracts dataset properties as required by the trained model."""
     df = pd.read_csv(file_path)
 
-    data_dimensions = determine_dimension(df.to_numpy())
+    # Now we pass both the np.array AND the df, so determine_dimension can do GPT logic
+    data_dimensions = determine_dimension(
+        df.to_numpy(),
+        df=df,
+        ask_gpt_for_hierarchy=use_gpt_for_hierarchy
+    )
 
     primary_variable, primary_variable_type = detect_primary_variable(df)
 
     dataset_info = {
         "Data_Dimensions": data_dimensions,
-        "No_of_Attributes": df.shape[1],  
-        "No_of_Records": df.shape[0],  
-        "Primary_Variable (Data Type)": primary_variable_type,  
+        "No_of_Attributes": df.shape[1],
+        "No_of_Records": df.shape[0],
+        "Primary_Variable (Data Type)": primary_variable_type,
     }
 
     return dataset_info
+

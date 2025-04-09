@@ -288,7 +288,7 @@ def generate_final_plot(df, x_axis, y_axis, chart_type):
     print("DEBUG: ctype =", ctype)
     
     if "histogram" in ctype:
-        plt.hist(df[x_axis], bins=10, color="blue", alpha=0.7)
+        plt.hist(df[x_axis], bins=10, color="blue", alpha=0.7, edgecolor="black", linewidth=1.0)
     elif "pie" in ctype:
         data = df.groupby(x_axis)[y_axis].sum()
         plt.pie(data, labels=data.index, autopct="%1.1f%%")
@@ -474,3 +474,4 @@ def classify_purpose_with_gpt_fallback(input_str):
 
     return response
 
+# Define test cases
