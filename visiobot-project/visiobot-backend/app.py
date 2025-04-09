@@ -57,7 +57,7 @@ def process_dataset():
     file.save(file_path)
 
     try:
-        dataset_info = dataset_utils.extract_dataset_info(file_path)
+        dataset_info = dataset_utils.extract_dataset_info(file_path, use_gpt_for_hierarchy=True)
 
         global_data["dataset_info"] = dataset_info
         global_data["dataset_uploaded"] = True
@@ -145,7 +145,6 @@ def next_visualization():
                 "message": "No more visualization options are left."
             })
         response_data = send_current_recommendation(global_data["full_user_input"], as_dict=True)
-        response_data["pre_message"] = "Generating another visualization now..."
 
         return jsonify(response_data)
     return jsonify({"error": "Invalid feedback. Please respond with 'yes' or 'no'."}), 400
@@ -194,7 +193,7 @@ def get_dataset_columns():
 
         message = (
             f"The dataset you uploaded contains columns: {formatted_columns}. "
-            "Which columns and what insights would you like to visualize?"
+            "Which columns would you like to use for the X-axis, Y-axis, or both, and what insights would you like to visualize?"
         )
         return jsonify({"final_message": message})
 
