@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>VisioBot Chat</title>
   <style>
     body {
@@ -16,18 +16,16 @@
       justify-content: center;
       height: 100vh;
     }
-
     #chat-container {
       position: relative;
       width: 90%;
-      max-width: 800px; /* Adjust max-width as needed */
+      max-width: 800px;
       margin: 0 auto;
       padding: 20px;
       background-color: #1b263b;
       border-radius: 10px;
-      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.5);
     }
-    /* Make the header a flex container */
     #chat-header {
       display: flex;
       align-items: center;
@@ -36,20 +34,15 @@
       padding-bottom: 10px;
       border-bottom: 2px solid var(--blue-light);
     }
-
-    /* Keep the logo left-aligned */
     .header-left {
       display: flex;
       align-items: center;
     }
-
-    /* Keep the refresh button right-aligned */
     .header-right {
       position: absolute;
       top: 10px;
       right: 10px;
     }
-
     #refresh-button {
       position: absolute;
       top: 2%;
@@ -61,7 +54,6 @@
       cursor: pointer;
       transition: background-color 0.2s ease-in-out, border-radius 0.2s ease-in-out;
     }
-
     #refresh-button:hover {
       background-color: #24354d;
       border-radius: 50%;
@@ -69,30 +61,21 @@
     #refresh-button:active {
       transform: scale(0.9);
     }
-
     #refresh-button svg {
       width: 24px;
       height: 24px;
       fill: white;
     }
-
     #logo {
-      width: 100px; 
-      height: auto; 
+      width: 100px;
+      height: auto;
       margin-right: 10px;
       background: none;
-      padding: 0; 
+      padding: 0;
       border-radius: 0;
     }
-
-    #chat-title {
-      font-size: 1.5em;
-      font-weight: bold;
-      color: var(--text-white);
-    }
-
     #chatbox {
-      height: 60vh;  /* 60% of the viewport height */
+      height: 60vh;
       min-height: 300px;
       max-height: 600px;
       border-radius: 10px;
@@ -104,8 +87,6 @@
       flex-direction: column;
       align-items: flex-start;
     }
-
-    /* Adjustments for mobile devices */
     @media (max-width: 600px) {
       #chat-container {
         width: 90%;
@@ -117,33 +98,25 @@
     }
     #chatbox::-webkit-scrollbar {
       width: 6px;
-      border-radius: 10px; 
+      border-radius: 10px;
     }
-
     #chatbox::-webkit-scrollbar-track {
-      background-color: #0d1b2a !important; 
-      border-radius: 10px !important; 
+      background-color: #0d1b2a !important;
+      border-radius: 10px !important;
     }
-
     #chatbox::-webkit-scrollbar-thumb {
       background: #6895a9 !important;
-      border-radius: 10px !important; 
+      border-radius: 10px !important;
       min-height: 20px;
-    }
-
-    #chatbox::-webkit-scrollbar-corner {
-      background: #0d1b2a !important;
     }
     .user {
       color: #00c8ff;
       font-weight: bold;
     }
-
     .bot {
       color: #5aff15;
       font-weight: bold;
     }
-
     #input-area {
       display: flex;
       align-items: center;
@@ -152,15 +125,13 @@
       padding: 10px;
       margin-top: 10px;
     }
-
     .visualization-img {
       display: block;
       width: 100%;
-      max-height: 400px;    /* Limit height so it doesn't fill entire chat */
+      max-height: 400px;
       border-radius: 8px;
       margin: 0 auto;
     }
-
     input {
       flex-grow: 1;
       border: none;
@@ -169,12 +140,11 @@
       padding: 10px;
       outline: none;
     }
-
     button {
       background-color: #6895a9;
       color: white;
       border: none;
-      width: 45px; 
+      width: 45px;
       height: 45px;
       display: flex;
       align-items: center;
@@ -182,32 +152,29 @@
       border-radius: 50%;
       cursor: pointer;
       margin-left: 10px;
-      font-size: 20px; 
+      font-size: 20px;
       transition: background-color 0.2s ease-in-out;
-      padding: 0; 
-      line-height: 1; 
+      padding: 0;
+      line-height: 1;
     }
-
     button:hover {
       background-color: #0095cc;
     }
-
     button:active {
-      transform: scale(0.9); 
+      transform: scale(0.9);
     }
     button:disabled {
-      background-color: #ccc;  /* Shaded gray */
+      background-color: #ccc;
       cursor: not-allowed;
       opacity: 0.6;
       transition: background-color 0.2s ease-in-out;
     }
-
     #file-upload {
       display: none;
     }
     .user-message, .bot-message {
       display: inline-block;
-      background-color: #1E3A5F; 
+      background-color: #1E3A5F;
       color: white;
       padding: 8px 12px;
       border-radius: 12px;
@@ -215,28 +182,24 @@
       word-wrap: break-word;
       white-space: normal;
       text-align: left;
-      margin: 6px 5px; 
+      margin: 6px 5px;
     }
-
     .bot-message {
-      background-color: #14213d; 
+      background-color: #14213d;
       align-self: flex-start;
     }
-
     .user-message {
       align-self: flex-end;
     }
-
     .error-message {
       color: red;
       font-weight: bold;
-      text-align: center; 
+      text-align: center;
       display: flex;
       justify-content: center;
       width: 100%;
       margin-top: 10px;
     }
-
     .upload-btn {
       background-color: #6895a9;
       border-radius: 50%;
@@ -248,21 +211,19 @@
       cursor: pointer;
       margin-left: 10px;
     }
-
     .upload-btn:hover {
       background-color: #0095cc;
     }
     .upload-btn.disabled {
-      background-color: #ccc; /* Shaded gray */
+      background-color: #ccc;
       cursor: not-allowed;
       opacity: 0.6;
-      pointer-events: none;  /* Prevent any clicks */
+      pointer-events: none;
       transition: background-color 0.2s ease-in-out;
     }
     .upload-btn:active {
       transform: scale(0.9);
     }
-
     .upload-btn svg {
       width: 20px;
       height: 20px;
@@ -282,15 +243,12 @@
     #intro-message p {
       margin-bottom: 5px;
     }
-
     #intro-message p:last-child {
-      margin-top: 10px; 
+      margin-top: 10px;
     }
-
-    /* Reuse your .bot-message styling, but add display:flex for the dots */
     .bot-message.typing-indicator {
-      display: inline-flex;         /* allow dots to appear in a row */
-      background-color: #14213d;    /* same as your existing bot messages */
+      display: inline-flex;
+      background-color: #14213d;
       color: #fff;
       padding: 8px 12px;
       border-radius: 12px;
@@ -299,10 +257,8 @@
       white-space: normal;
       text-align: left;
       margin: 6px 5px;
-      align-self: flex-start;       /* appear on the left side like other bot msgs */
+      align-self: flex-start;
     }
-
-    /* The animated dots */
     .bot-message.typing-indicator .dot {
       background-color: #fff;
       width: 8px;
@@ -312,16 +268,12 @@
       opacity: 0.2;
       animation: blink 1.4s infinite both;
     }
-
-    /* Delay for the second and third dot to create the "moving" effect */
     .bot-message.typing-indicator .dot:nth-child(2) {
       animation-delay: 0.2s;
     }
     .bot-message.typing-indicator .dot:nth-child(3) {
       animation-delay: 0.4s;
     }
-
-    /* Keyframes for blinking dots */
     @keyframes blink {
       0%   { opacity: 0.2; }
       20%  { opacity: 1;   }
@@ -329,10 +281,10 @@
     }
     .download-wrapper {
       position: relative;
-      display: inline-block; /* Needed so that the icon is positioned relative to the image */
-      max-width: 90%;        /* Adjust as needed to make the image slightly smaller than the chatbox */
+      display: inline-block;
+      max-width: 90%;
       margin: 10px auto;
-      text-decoration: none; /* Remove underline */
+      text-decoration: none;
     }
     .download-icon {
       position: absolute;
@@ -350,7 +302,7 @@
       transition: background-color 0.2s ease-in-out;
     }
     .download-icon:hover {
-      background-color: lightgray; /* Light gray on hover */
+      background-color: lightgray;
     }
     .download-icon svg {
       width: 24px;
@@ -360,580 +312,538 @@
   </style>
 </head>
 <body>
-  <div id="chat-container">
-    <!-- Refresh button at the top-right of the container -->
-    <button id="refresh-button" class="header-btn" onclick="refreshPage()">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 .34-.03.67-.08 1h2.02c.05-.33.06-.66.06-1 0-4.42-3.58-8-8-8zm-6 7c0-.34.03-.67.08-1H4.06c-.05.33-.06.66-.06 1 0 4.42 3.58 8 8 8v3l4-4-4-4v3c-3.31 0-6-2.69-6-6z" fill="white"/>
-      </svg>
-    </button>
 
-    <!-- HEADER -->
-    <div id="chat-header">
-      <!-- Left side: logo -->
-      <div class="header-left">
-        <img id="logo" src="visiobot logo.png" alt="VisioBot Logo">
-      </div>
-      <!-- ... any other header elements here ... -->
-    </div>
+<div id="chat-container">
 
-    <div id="chatbox">
-      <div id="intro-message">
-        <p>Welcome to <strong>VisioBot</strong>! I can help you find the best data visualization for your dataset.</p>
-        <p>Type <strong>"Hello"</strong> to get started!</p>
-      </div>
-    </div>
+  <button id="refresh-button" class="header-btn" onclick="refreshPage()">
+    <svg viewBox="0 0 24 24">
+      <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 .34-.03.67-.08 1h2.02c.05-.33.06-.66.06-1 0-4.42-3.58-8-8-8zm-6 7c0-.34.03-.67.08-1H4.06c-.05.33-.06.66-.06 1 0 4.42 3.58 8 8 8v3l4-4-4-4v3c-3.31 0-6-2.69-6-6z" fill="white"/>
+    </svg>
+  </button>
 
-    <div id="input-area">
-      <label for="file-upload" class="upload-btn">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M10 4L12 6H20C21.1 6 22 6.9 22 8V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4H10Z" fill="white"/>
-        </svg>
-      </label>            
-      <input type="file" id="file-upload" accept=".csv">
-      <input type="text" id="userInput" placeholder="Ask anything...">
-      <button id="sendButton" onclick="sendMessage()" disabled>➤</button>
+  <div id="chat-header">
+    <div class="header-left">
+      <img id="logo" src="visiobot logo.png" alt="VisioBot Logo">
     </div>
   </div>
 
-  <script>
-    // Global array to hold any text elements that should appear after the image is fully loaded.
-    let pendingAfterImageContent = [];
+  <div id="chatbox">
+    <div id="intro-message">
+      <p>Welcome to <strong>VisioBot</strong>! I can help you find the best data visualization for your dataset.</p>
+      <p>Type <strong>"Hello"</strong> to get started!</p>
+    </div>
+  </div>
 
-    // Helper functions to append content using DOM methods.
-    function appendMessage(messageHTML, className = "") {
-      const p = document.createElement("p");
-      p.innerHTML = messageHTML;
-      if (className) {
-        p.classList.add(className);
+  <div id="input-area">
+    <label for="file-upload" class="upload-btn">
+      <svg viewBox="0 0 24 24">
+        <path d="M10 4L12 6H20C21.1 6 22 6.9 22 8V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4H10Z" fill="white"/>
+      </svg>
+    </label>
+    <input type="file" id="file-upload" accept=".csv">
+    <input type="text" id="userInput" placeholder="Ask anything...">
+    <button id="sendButton" onclick="sendMessage()" disabled>➤</button>
+  </div>
+</div>
+
+<script>
+  let datasetUploaded = false;
+  let datasetInfo = null;
+  let purpose = "";
+  let audience = "";
+  let waitingForFeedback = false;
+  let waitingForColumns = false;
+  let waitingForRestart = false;
+  let waitingForReuse = false;
+
+  // A global array to hold any text that should appear ONLY after the image is loaded
+  let pendingAfterImageContent = [];
+
+  const chatbox = document.getElementById("chatbox");
+  const userInput = document.getElementById("userInput");
+  const sendButton = document.getElementById("sendButton");
+
+  userInput.addEventListener("keypress", function(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      sendMessage();
+    }
+  });
+  userInput.addEventListener("input", function() {
+    sendButton.disabled = this.value.trim() === '';
+  });
+
+  function refreshPage() {
+    window.location.reload();
+  }
+
+  function scrollToBottom() {
+    chatbox.scrollTop = chatbox.scrollHeight;
+  }
+
+  function addTypingIndicator() {
+    removeTypingIndicator();
+    let indicator = document.createElement("p");
+    indicator.className = "bot-message typing-indicator";
+    indicator.id = "typingIndicator";
+    indicator.innerHTML = `
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+    `;
+    chatbox.appendChild(indicator);
+    scrollToBottom();
+  }
+
+  function removeTypingIndicator() {
+    let existing = document.getElementById("typingIndicator");
+    if (existing) {
+      existing.remove();
+    }
+  }
+
+  async function forceDownloadImage(url, filename) {
+    try {
+      const resp = await fetch(url, { mode: "cors" });
+      const blob = await resp.blob();
+      const objectURL = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectURL;
+      link.download = filename || "visualization.png";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectURL);
+    } catch (err) {
+      console.error("Download failed:", err);
+    }
+  }
+
+  // Helper that flushes any queued messages, then scrolls
+  function flushPendingAfterImage() {
+  pendingAfterImageContent.forEach((htmlSnippet) => {
+    chatbox.innerHTML += htmlSnippet;
+  });
+  pendingAfterImageContent = [];
+  requestAnimationFrame(() => {
+    scrollToBottom();
+  });
+}
+
+
+  // Create + append the image with an onload that flushes queued text
+  function appendImageAndQueue(plotUrl, plotTitle) {
+    const safeFilename = plotTitle
+      ? plotTitle.replace(/\s+/g, '_').replace(/[^\w_]/g, '') + '.png'
+      : 'visualization.png';
+
+    // Build container with DOM methods
+    const container = document.createElement("span");
+    container.style.position = "relative";
+    container.style.display = "inline-block";
+    container.style.margin = "10px auto";
+
+    const img = document.createElement("img");
+    img.className = "visualization-img";
+    img.src = plotUrl;
+    img.alt = plotTitle || 'Final Plot';
+    img.style.width = "100%";
+    img.style.maxHeight = "400px";
+    img.style.borderRadius = "8px";
+    img.style.margin = "0 auto";
+    img.style.display = "block";
+    // When image is loaded, flush queued messages
+    img.onload = function() {
+      flushPendingAfterImage();
+    };
+    container.appendChild(img);
+
+    const downloadBtn = document.createElement("button");
+    downloadBtn.className = "download-icon";
+    downloadBtn.title = "Download Visualization";
+    downloadBtn.onclick = function() {
+      forceDownloadImage(plotUrl, safeFilename);
+    };
+    downloadBtn.innerHTML = `
+      <svg viewBox="0 0 24 24">
+        <path d="M19 9h-4V3H9v6H5l7 7 7-7z" />
+        <path d="M5 18h14v2H5z" />
+      </svg>
+    `;
+    container.appendChild(downloadBtn);
+
+    chatbox.appendChild(container);
+    scrollToBottom();
+  }
+
+  async function sendMessage() {
+    let userInputValue = userInput.value.trim();
+    if (!userInputValue) return;
+
+    chatbox.innerHTML += `<p class="user-message">${userInputValue}</p>`;
+    userInput.value = "";
+    sendButton.disabled = true;
+    scrollToBottom();
+
+    let lowerInput = userInputValue.toLowerCase();
+    if (["hello","hi","hey"].includes(lowerInput)) {
+      try {
+        let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userInputValue })
+        });
+        chatbox.innerHTML += `<p class="bot-message">${data.response}</p>`;
+        scrollToBottom();
+      } catch (e) {
+        console.error("Greeting error:", e);
       }
-      chatbox.appendChild(p);
+      return;
+    }
+
+    if (waitingForReuse) {
+      handleReuseFlow(userInputValue);
+      return;
+    }
+    if (waitingForRestart) {
+      handleRestartFlow(userInputValue);
+      return;
+    }
+    if (waitingForColumns) {
+      handleColumns(userInputValue);
+      return;
+    }
+    if (waitingForFeedback) {
+      handleFeedback(userInputValue);
+      return;
+    }
+
+    if (!datasetUploaded) {
+      if (!lowerInput.includes("upload")) {
+        callChatFallback(userInputValue);
+      } else {
+        chatbox.innerHTML += `<p class="error-message">No dataset uploaded. Please use the upload button or type 'upload' to do so.</p>`;
+        scrollToBottom();
+      }
+      return;
+    }
+
+    if (!purpose) {
+      purpose = userInputValue;
+      chatbox.innerHTML += `<p class="bot-message">Who is your target audience? (Expert or Non-Expert)</p>`;
       scrollToBottom();
+      return;
     }
 
-    function appendHTML(html) {
-      const container = document.createElement("div");
-      container.innerHTML = html;
-      while (container.firstChild) {
-        chatbox.appendChild(container.firstChild);
-      }
+    if (!audience) {
+      audience = userInputValue;
+      chatbox.innerHTML += `<p class="bot-message">Processing your data... Generating a visualization recommendation now.</p>`;
       scrollToBottom();
+      requestVisualization(purpose, audience);
+      return;
     }
 
-    function scrollToBottom() {
-      chatbox.scrollTop = chatbox.scrollHeight;
-    }
+    callChatFallback(userInputValue);
+  }
 
-    let datasetUploaded = false;
-    let datasetInfo = null;
-    let purpose = "";
-    let audience = "";
-    let waitingForFeedback = false;
-    let waitingForColumns = false;
-    let waitingForRestart = false;
-    let waitingForReuse = false;
-
-    const chatbox = document.getElementById("chatbox");
-
-    document.getElementById("userInput").addEventListener("keypress", function(event) {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        sendMessage();
-      }
+  function callChatFallback(message) {
+    addTypingIndicator();
+    fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message })
+    })
+    .then(r=>r.json())
+    .then(data => {
+      removeTypingIndicator();
+      chatbox.innerHTML += `<p class="bot-message">${data.response}</p>`;
+      scrollToBottom();
+    })
+    .catch(e => {
+      removeTypingIndicator();
+      console.error("Chat fallback error:", e);
     });
-    const userInputField = document.getElementById('userInput');
-    const sendButton = document.getElementById('sendButton');
+  }
 
-    userInputField.addEventListener('input', function() {
-      sendButton.disabled = this.value.trim() === '';
-    });
-
-    async function sendMessage() {
-      let userInput = userInputField.value.trim();
-      if (!userInput) return;
-
-      // Append user message using DOM method.
-      appendMessage(userInput, "user-message");
-      userInputField.value = "";
-      sendButton.disabled = true;
-
-      let lowerInput = userInput.toLowerCase();
-      if (["hello", "hi", "hey"].includes(lowerInput)) {
-        try {
-          let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: userInput })
-          });
-          appendMessage(data.response, "bot-message");
-        } catch (e) {
-          console.error("Greeting error:", e);
-        }
-        return;
-      }
-
-      if (waitingForReuse) {
-        handleReuseFlow(userInput);
-        return;
-      }
-
-      if (waitingForRestart) {
-        handleRestartFlow(userInput);
-        return;
-      }
-
-      if (waitingForColumns) {
-        handleColumns(userInput);
-        return;
-      }
-
-      if (waitingForFeedback) {
-        handleFeedback(userInput);
-        return;
-      }
-
-      if (!datasetUploaded) {
-        if (!lowerInput.includes("upload")) {
-          callChatFallback(userInput);
-        } else {
-          appendMessage("No dataset uploaded. Please use the upload button or type 'upload' to do so.", "error-message");
-        }
-        return;
-      }
-
-      if (!purpose) {
-        purpose = userInput;
-        appendMessage("Who is your target audience? (Expert or Non-Expert)", "bot-message");
-        return;
-      }
-
-      if (!audience) {
-        audience = userInput;
-        appendMessage("Processing your data... Generating a visualization recommendation now.", "bot-message");
-        requestVisualization(purpose, audience);
-        return;
-      }
-
-      callChatFallback(userInput);
+  async function fetchWithTyping(url, options) {
+    addTypingIndicator();
+    try {
+      let resp = await fetch(url, options);
+      let data = await resp.json();
+      await new Promise(resolve => setTimeout(resolve, 500));
+      removeTypingIndicator();
+      return data;
+    } catch (e) {
+      removeTypingIndicator();
+      throw e;
     }
+  }
 
-    function callChatFallback(message) {
-      addTypingIndicator();
-      fetch("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/chat", {
+  async function handleRestartFlow(userInputValue) {
+    waitingForRestart = false;
+    if (userInputValue.toLowerCase() === "yes") {
+      try {
+        let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/restart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        chatbox.innerHTML += `<p class="bot-message">${data.restart_message}</p>`;
+        scrollToBottom();
+        datasetUploaded = false;
+        datasetInfo = null;
+        purpose = "";
+        audience = "";
+        waitingForFeedback = false;
+        waitingForColumns = false;
+        document.querySelector('.upload-btn').classList.remove('disabled');
+        document.getElementById("file-upload").disabled = false;
+      } catch (e) {
+        chatbox.innerHTML += `<p class="error-message">Error restarting: ${e}</p>`;
+        scrollToBottom();
+      }
+    } else if (userInputValue.toLowerCase() === "no") {
+      chatbox.innerHTML += `
+        <div id="intro-message">
+          <p>VisioBot has left the chat. Thank you for using our service!</p>
+        </div>`;
+      scrollToBottom();
+      document.getElementById("input-area").style.display = "none";
+    } else {
+      chatbox.innerHTML += `<p class="error-message">Please respond with "Yes" or "No".</p>`;
+      scrollToBottom();
+      waitingForRestart = true;
+    }
+  }
+
+  async function handleColumns(userInputValue) {
+    waitingForColumns = false;
+    try {
+      let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/final-plot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message })
-      })
-      .then(r => r.json())
-      .then(data => {
-        removeTypingIndicator();
-        appendMessage(data.response, "bot-message");
-      })
-      .catch(e => {
-        removeTypingIndicator();
-        console.error("Chat fallback error:", e);
+        body: JSON.stringify({ user_request: userInputValue })
       });
-    }
 
-    async function fetchWithTyping(url, options) {
-      addTypingIndicator();
-      try {
-        let resp = await fetch(url, options);
-        let data = await resp.json();
-        // Optionally wait a short time to let the indicator show:
-        await new Promise(resolve => setTimeout(resolve, 500));
-        removeTypingIndicator();
-        return data;
-      } catch (e) {
-        removeTypingIndicator();
-        throw e;
-      }
-    }
-
-    async function handleRestartFlow(userInput) {
-      waitingForRestart = false;
-      if (userInput.toLowerCase() === "yes") {
-        try {
-          let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/restart", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" }
-          });
-          appendMessage(data.restart_message, "bot-message");
-          datasetUploaded = false;
-          datasetInfo = null;
-          purpose = "";
-          audience = "";
-          waitingForFeedback = false;
-          waitingForColumns = false;
-          
-          document.querySelector('.upload-btn').classList.remove('disabled');
-          document.getElementById("file-upload").disabled = false;
-        } catch (e) {
-          appendMessage(`Error restarting: ${e}`, "error-message");
-        }
-      } else if (userInput.toLowerCase() === "no") {
-        appendHTML(`
-          <div id="intro-message">
-            <p>VisioBot has left the chat. Thank you for using our service!</p>
-          </div>
-        `);
-        document.getElementById("input-area").style.display = "none";
+      if (data.error) {
+        chatbox.innerHTML += `<p class="error-message">${data.error}</p>`;
+        scrollToBottom();
       } else {
-        appendMessage('Please respond with "Yes" or "No".', "error-message");
-        waitingForRestart = true;
-      }
-    }
+        chatbox.innerHTML += `<p class="bot-message">${data.message}</p>`;
+        scrollToBottom();
 
-    async function handleColumns(userInput) {
-      waitingForColumns = false;
+        // If there's an image, append it via DOM, then queue texts
+        if (data.plot_url) {
+          appendImageAndQueue(data.plot_url, data.plot_title);
+        }
+
+        // Instead of immediately appending text, we push it to the queue if there's an image
+        if (data.plot_description) {
+          pendingAfterImageContent.push(`<p class="bot-message">${data.plot_description}</p>`);
+        }
+        if (data.ask_reuse) {
+          pendingAfterImageContent.push(`<p class="bot-message">${data.ask_reuse}</p>`);
+          waitingForReuse = true;
+        }
+        else if (data.ask_restart) {
+          pendingAfterImageContent.push(`<p class="bot-message">${data.ask_restart}</p>`);
+          waitingForRestart = true;
+        }
+        // If there's no image, flush right away
+        if (!data.plot_url) {
+          flushPendingAfterImage();
+        }
+      }
+    } catch (e) {
+      chatbox.innerHTML += `<p class="error-message">Error generating final plot: ${e}</p>`;
+      scrollToBottom();
+    }
+  }
+
+  async function fetchWithoutTyping(url, options) {
+    const resp = await fetch(url, options);
+    return await resp.json();
+  }
+
+  async function handleFeedback(feedbackValue) {
+    waitingForFeedback = false;
+    if (feedbackValue.toLowerCase() === "yes") {
+      chatbox.innerHTML += `<p class="bot-message">Great! Proceeding with the selected visualization.</p>`;
+      scrollToBottom();
       try {
-        let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/final-plot", {
+        let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/next-visualization", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_request: userInput })
-        });
-    
-        if (data.error) {
-          appendMessage(data.error, "error-message");
-        } else {
-          appendMessage(data.message, "bot-message");
-
-          // Build a safe filename for downloading the image:
-          const safeFilename = data.plot_title
-            ? data.plot_title.replace(/\s+/g, '_').replace(/[^\w_]/g, '') + '.png'
-            : 'visualization.png';
-
-          if (data.plot_url) {
-            // Instead of using appendHTML, manually create the image container and wait for onload.
-            const imageContainer = document.createElement("span");
-            imageContainer.style.position = "relative";
-            imageContainer.style.display = "inline-block";
-            imageContainer.style.margin = "10px auto";
-
-            const img = document.createElement("img");
-            img.className = "visualization-img";
-            img.src = data.plot_url;
-            img.alt = data.plot_title || 'Final Plot';
-            img.style.width = "100%";
-            img.style.maxHeight = "400px";
-            img.style.borderRadius = "8px";
-            img.style.margin = "0 auto";
-            img.style.display = "block";
-            // When image loads, flush all pending text.
-            img.onload = function() {
-              pendingAfterImageContent.forEach((el) => {
-                  chatbox.appendChild(el);
-              });
-              pendingAfterImageContent = [];
-              scrollToBottom();
-            };
-
-            imageContainer.appendChild(img);
-
-            // Create the download button.
-            const downloadBtn = document.createElement("button");
-            downloadBtn.className = "download-icon";
-            downloadBtn.title = "Download Visualization";
-            downloadBtn.onclick = function() {
-              forceDownloadImage(data.plot_url, safeFilename);
-            };
-            downloadBtn.innerHTML = `
-              <svg viewBox="0 0 24 24">
-                <path d="M19 9h-4V3H9v6H5l7 7 7-7z" />
-                <path d="M5 18h14v2H5z" />
-              </svg>
-            `;
-            imageContainer.appendChild(downloadBtn);
-            chatbox.appendChild(imageContainer);
-          }
-                    
-          if (data.plot_description) {
-            // Queue text until the image (if present) loads.
-            const p = document.createElement("p");
-            p.innerHTML = data.plot_description;
-            p.className = "bot-message";
-            if (data.plot_url) {
-              pendingAfterImageContent.push(p);
-            } else {
-              chatbox.appendChild(p);
-              scrollToBottom();
-            }
-          }
-          if (data.ask_reuse) {
-            appendMessage(data.ask_reuse, "bot-message");
-            waitingForReuse = true;
-          }
-          else if (data.ask_restart) {
-            appendMessage(data.ask_restart, "bot-message");
-            waitingForRestart = true;
-          }
-        }
-      } catch (e) {
-        appendMessage(`Error generating final plot: ${e}`, "error-message");
-      }
-    }
-
-    async function fetchWithoutTyping(url, options) {
-      const resp = await fetch(url, options);
-      return await resp.json();
-    }
-
-    async function handleFeedback(feedback) {
-      waitingForFeedback = false;
-      if (feedback.toLowerCase() === "yes") {
-        appendMessage("Great! Proceeding with the selected visualization.", "bot-message");
-        try {
-          let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/next-visualization", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ feedback: "yes" })
-          });
-          displayVisualization(data);
-        } catch (e) {
-          appendMessage(`Error fetching final step: ${e}`, "error-message");
-        }
-      } else if (feedback.toLowerCase() === "no") {
-        appendMessage("Generating another visualization now...", "bot-message");
-        setTimeout(async () => {
-          addTypingIndicator();
-          try {
-            let data = await fetchWithoutTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/next-visualization", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ feedback: "no" })
-            });
-            removeTypingIndicator();
-            displayVisualization(data);
-          } catch (e) {
-            removeTypingIndicator();
-            appendMessage(`Error fetching next visualization: ${e}`, "error-message");
-          }
-        }, 300);
-      } else {
-        removeTypingIndicator();
-        appendMessage('Please respond with "Yes" or "No".', "error-message");
-        waitingForFeedback = true;
-      }
-    }
-
-    async function handleReuseFlow(userInput) {
-      waitingForReuse = false;
-      if (userInput.toLowerCase() === "yes") {
-        try {
-          let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/reuse-dataset", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" }
-          });
-          appendMessage(data.final_message || data.message || "Please select the columns you want to visualize.", "bot-message");
-          waitingForColumns = true;
-        } catch (e) {
-          appendMessage(`Error reusing dataset: ${e}`, "error-message");
-        }
-      } else if (userInput.toLowerCase() === "no") {
-        appendMessage("Would you like to start over with a new dataset? (Yes/No)", "bot-message");
-        waitingForRestart = true;
-      } else {
-        appendMessage('Please respond with "Yes" or "No".', "error-message");
-        waitingForReuse = true;
-      }
-    }
-
-    // Updated displayVisualization: if an image exists, text that follows is queued until the image loads.
-    function displayVisualization(data) {
-      waitingForFeedback = false;
-      
-      if (data.pre_message) {
-        appendMessage(data.pre_message, "bot-message");
-      }
-      if (data.message && !data.prediction) {
-        appendMessage(data.message, "bot-message");
-      }
-      
-      // Compute safe filename if image is available.
-      const safeFilename = data.plot_title
-          ? data.plot_title.replace(/\s+/g, '_').replace(/[^\w_]/g, '') + '.png'
-          : 'visualization.png';
-      
-      const imageExists = !!data.plot_url;
-      if (imageExists) {
-        // Create container for image and download button.
-        const imageContainer = document.createElement("span");
-        imageContainer.style.position = "relative";
-        imageContainer.style.display = "inline-block";
-        imageContainer.style.margin = "10px auto";
-
-        const img = document.createElement("img");
-        img.className = "visualization-img";
-        img.src = data.plot_url;
-        img.alt = data.plot_title || 'Final Plot';
-        img.style.width = "100%";
-        img.style.maxHeight = "400px";
-        img.style.borderRadius = "8px";
-        img.style.margin = "0 auto";
-        img.style.display = "block";
-        // When the image fully loads, flush queued text.
-        img.onload = function() {
-          pendingAfterImageContent.forEach((el) => {
-            chatbox.appendChild(el);
-          });
-          pendingAfterImageContent = [];
-          scrollToBottom();
-        };
-        imageContainer.appendChild(img);
-
-        // Create download button.
-        const downloadBtn = document.createElement("button");
-        downloadBtn.className = "download-icon";
-        downloadBtn.title = "Download Visualization";
-        downloadBtn.onclick = function() {
-          forceDownloadImage(data.plot_url, safeFilename);
-        };
-        downloadBtn.innerHTML = `
-          <svg viewBox="0 0 24 24">
-            <path d="M19 9h-4V3H9v6H5l7 7 7-7z" />
-            <path d="M5 18h14v2H5z" />
-          </svg>
-        `;
-        imageContainer.appendChild(downloadBtn);
-        chatbox.appendChild(imageContainer);
-        // The scroll to bottom will happen when the image's onload fires.
-      }
-      
-      // Helper to queue or immediately append text that comes after the image.
-      function appendAfterImage(html, className) {
-        let p = document.createElement("p");
-        p.innerHTML = html;
-        p.className = className;
-        if (imageExists) {
-          pendingAfterImageContent.push(p);
-        } else {
-          chatbox.appendChild(p);
-          scrollToBottom();
-        }
-      }
-      
-      if (data.plot_description) {
-        appendAfterImage(data.plot_description, "bot-message");
-      }
-      if (data.ask_feedback) {
-        appendAfterImage(data.ask_feedback, "bot-message");
-        waitingForFeedback = true;
-      }
-      if (data.ask_reuse) {
-        appendMessage(data.ask_reuse, "bot-message");
-        waitingForReuse = true;
-        return;
-      }
-      if (data.ask_restart) {
-        appendMessage(data.ask_restart, "bot-message");
-        waitingForRestart = true;
-        return;
-      }
-      if (data.final_message) {
-        appendAfterImage(data.final_message, "bot-message");
-        waitingForColumns = true;
-      }
-      if (data.prediction) {
-        appendAfterImage(`Recommended Visualization: <strong>${data.prediction}</strong>`, "bot-message");
-      }
-      if (data.explanation) {
-        appendAfterImage(data.explanation, "bot-message");
-      }
-      if (data.note) {
-        appendAfterImage(data.note, "bot-message");
-      }
-    }
-
-    async function requestVisualization(purpose, audience) {
-      let requestData = {
-        "Task (Purpose)": purpose,
-        "Target Audience": audience
-      };
-      try {
-        let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/get-visualization", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestData)
+          body: JSON.stringify({ feedback: "yes" })
         });
         displayVisualization(data);
       } catch (e) {
-        appendMessage(`Error fetching visualization: ${e}`, "error-message");
+        chatbox.innerHTML += `<p class="error-message">Error fetching final step: ${e}</p>`;
+        scrollToBottom();
       }
-    }
-
-    document.getElementById("file-upload").addEventListener("change", async function() {
-      let file = this.files[0];
-      if (!file) return;
-      appendMessage(`Sending... ${file.name}`, "user-message");
-
-      let formData = new FormData();
-      formData.append("file", file);
-
-      try {
-        let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/process-dataset", {
-          method: "POST",
-          body: formData,
-          credentials: "include"
-        });
-        datasetUploaded = true;
-        datasetInfo = data.dataset_details;
-        appendMessage("Dataset uploaded successfully!", "bot-message");
-        appendMessage("What is the purpose of your visualization? (Distribution, Relationship, Comparison, Trends)", "bot-message");
-
-        // Disable file upload button and input
-        document.querySelector('.upload-btn').classList.add('disabled');
-        document.getElementById("file-upload").disabled = true;
-      } catch (error) {
-        appendMessage("Error: Dataset upload failed!", "error-message");
-        console.error("Upload error:", error);
-      }
-    });
-
-    function refreshPage() {
-      window.location.reload();
-    }
-    function addTypingIndicator() {
-      // Remove any existing indicator first
+    } else if (feedbackValue.toLowerCase() === "no") {
+      chatbox.innerHTML += `<p class="bot-message">Generating another visualization now...</p>`;
+      scrollToBottom();
+      setTimeout(async () => {
+        addTypingIndicator();
+        try {
+          let data = await fetchWithoutTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/next-visualization", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ feedback: "no" })
+          });
+          removeTypingIndicator();
+          displayVisualization(data);
+        } catch (e) {
+          removeTypingIndicator();
+          chatbox.innerHTML += `<p class="error-message">Error fetching next visualization: ${e}</p>`;
+          scrollToBottom();
+        }
+      }, 300);
+    } else {
       removeTypingIndicator();
+      chatbox.innerHTML += `<p class="error-message">Please respond with "Yes" or "No".</p>`;
+      scrollToBottom();
+      waitingForFeedback = true;
+    }
+  }
 
-      // Create a <p> with both "bot-message" and "typing-indicator" classes
-      let indicator = document.createElement("p");
-      indicator.className = "bot-message typing-indicator";
-      indicator.id = "typingIndicator";
+  async function handleReuseFlow(userInputValue) {
+    waitingForReuse = false;
+    if (userInputValue.toLowerCase() === "yes") {
+      try {
+        let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/reuse-dataset", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        chatbox.innerHTML += `<p class="bot-message">${data.final_message || data.message || "Please select the columns you want to visualize."}</p>`;
+        scrollToBottom();
+        waitingForColumns = true;
+      } catch (e) {
+        chatbox.innerHTML += `<p class="error-message">Error reusing dataset: ${e}</p>`;
+        scrollToBottom();
+      }
+    } else if (userInputValue.toLowerCase() === "no") {
+      chatbox.innerHTML += `<p class="bot-message">Would you like to start over with a new dataset? (Yes/No)</p>`;
+      scrollToBottom();
+      waitingForRestart = true;
+    } else {
+      chatbox.innerHTML += `<p class="error-message">Please respond with "Yes" or "No".</p>`;
+      scrollToBottom();
+      waitingForReuse = true;
+    }
+    scrollToBottom();
+  }
 
-      // Insert three dots inside
-      indicator.innerHTML = `
-        <span class="dot"></span>
-        <span class="dot"></span>
-        <span class="dot"></span>
-      `;
-      chatbox.appendChild(indicator);
+  function displayVisualization(data) {
+    waitingForFeedback = false;
+
+    if (data.pre_message) {
+      chatbox.innerHTML += `<p class="bot-message">${data.pre_message}</p>`;
+      scrollToBottom();
+    }
+    if (data.message && !data.prediction) {
+      chatbox.innerHTML += `<p class="bot-message">${data.message}</p>`;
+      scrollToBottom();
+    }
+    if (data.ask_reuse) {
+      chatbox.innerHTML += `<p class="bot-message">${data.ask_reuse}</p>`;
+      scrollToBottom();
+      waitingForReuse = true;
+      return;
+    }
+    if (data.ask_restart) {
+      chatbox.innerHTML += `<p class="bot-message">${data.ask_restart}</p>`;
+      scrollToBottom();
+      waitingForRestart = true;
+      return;
+    }
+    if (data.final_message) {
+      chatbox.innerHTML += `<p class="bot-message">${data.final_message}</p>`;
+      waitingForColumns = true;
+      scrollToBottom();
+    }
+    if (data.prediction) {
+      chatbox.innerHTML += `<p class="bot-message">Recommended Visualization: <strong>${data.prediction}</strong></p>`;
+      scrollToBottom();
+    }
+    if (data.explanation) {
+      chatbox.innerHTML += `<p class="bot-message">${data.explanation}</p>`;
+      scrollToBottom();
+    }
+    if (data.note) {
+      chatbox.innerHTML += `<p class="bot-message">${data.note}</p>`;
       scrollToBottom();
     }
 
-    function removeTypingIndicator() {
-      let existing = document.getElementById("typingIndicator");
-      if (existing) {
-        existing.remove();
-      }
+    // If there's a plot, append it via DOM
+    if (data.plot_url) {
+      appendImageAndQueue(data.plot_url, data.plot_title);
     }
 
-    async function forceDownloadImage(url, filename) {
-      try {
-        const resp = await fetch(url, { mode: "cors" });
-        const blob = await resp.blob();
-        const objectURL = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = objectURL;
-        link.download = filename || "visualization.png";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(objectURL);
-      } catch (err) {
-        console.error("Download failed:", err);
-      }
+    // Now queue any text that must appear AFTER the image
+    if (data.plot_description) {
+      pendingAfterImageContent.push(`<p class="bot-message">${data.plot_description}</p>`);
     }
-  </script>
+    if (data.ask_feedback) {
+      pendingAfterImageContent.push(`<p class="bot-message">${data.ask_feedback}</p>`);
+      waitingForFeedback = true;
+    }
+
+    // If there's no image, flush right now
+    if (!data.plot_url) {
+      flushPendingAfterImage();
+    }
+  }
+
+  async function requestVisualization(purpose, audience) {
+    let requestData = {
+      "Task (Purpose)": purpose,
+      "Target Audience": audience
+    };
+    try {
+      let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/get-visualization", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestData)
+      });
+      displayVisualization(data);
+    } catch (e) {
+      chatbox.innerHTML += `<p class="error-message">Error fetching visualization: ${e}</p>`;
+      scrollToBottom();
+    }
+  }
+
+  document.getElementById("file-upload").addEventListener("change", async function() {
+    let file = this.files[0];
+    if (!file) return;
+    chatbox.innerHTML += `<p class="user-message">Sending... ${file.name}</p>`;
+    scrollToBottom();
+
+    let formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      let data = await fetchWithTyping("https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/process-dataset", {
+        method: "POST",
+        body: formData,
+        credentials: "include"
+      });
+      datasetUploaded = true;
+      datasetInfo = data.dataset_details;
+      chatbox.innerHTML += `<p class="bot-message">Dataset uploaded successfully!</p>`;
+      scrollToBottom();
+      chatbox.innerHTML += `<p class="bot-message">What is the purpose of your visualization? (Distribution, Relationship, Comparison, Trends)</p>`;
+      scrollToBottom();
+
+      document.querySelector('.upload-btn').classList.add('disabled');
+      document.getElementById("file-upload").disabled = true;
+    } catch (error) {
+      chatbox.innerHTML += `<p class="error-message">Error: Dataset upload failed!</p>`;
+      scrollToBottom();
+      console.error("Upload error:", error);
+    }
+  });
+</script>
+
 </body>
 </html>
