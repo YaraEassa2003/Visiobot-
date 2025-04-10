@@ -289,7 +289,7 @@ def generate_final_plot(df, x_axis, y_axis, chart_type, feature_columns=None, cl
     print("DEBUG: ctype =", ctype)
     
     if "histogram" in ctype:
-        # UPDATED: Gather all numeric columns
+        # Gather all numeric columns
         numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
 
         # If user didn't specify or the specified `x_axis` doesn't exist, we handle it:
@@ -307,13 +307,13 @@ def generate_final_plot(df, x_axis, y_axis, chart_type, feature_columns=None, cl
                     raise ValueError("No numeric columns found for histogram.")
 
         plt.hist(df[x_axis], bins=10, color="blue", alpha=0.7, edgecolor="black", linewidth=1.0)
-        
-        # UPDATED: Label the Y-axis as "Count" for clarity in a histogram
+        # Label the Y-axis as "Count" for clarity in a histogram
         plt.xlabel(x_axis)
         plt.ylabel("Count")
         plt.title(f"Histogram of {x_axis}")
+
     elif "pie" in ctype:
-    # For pie charts, we assume x_axis is the "grouping" column and y_axis is the numeric value.
+        # For pie charts, we assume x_axis is the "grouping" column and y_axis is the numeric value.
         if x_axis not in df.columns:
             numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
             if numeric_cols:
@@ -325,10 +325,8 @@ def generate_final_plot(df, x_axis, y_axis, chart_type, feature_columns=None, cl
             y_axis = x_axis
         data = df.groupby(x_axis)[y_axis].sum()
         plt.pie(data, labels=data.index, autopct="%1.1f%%")
-        # Pie charts do not typically have axis labels.
-        plt.xlabel("")  
+        plt.xlabel("")
         plt.ylabel("")
-        # UPDATED: Title now directly explains the distribution of the grouping column.
         plt.title(f"Pie Chart: Distribution of {x_axis}")
 
     elif "treemap" in ctype:
@@ -442,13 +440,13 @@ def generate_final_plot(df, x_axis, y_axis, chart_type, feature_columns=None, cl
         plt.text(0.5, 0.5, f"Unsupported chart type: {chart_type}", ha="center")
     
     
-    if "parallel" not in ctype:
+    if "parallel" not in ctype and "histogram" not in ctype and "pie" not in ctype:
         plt.xlabel(x_axis)
         plt.ylabel(y_axis)
         plt.title(f"{chart_type} of {y_axis} vs {x_axis}")
-    else:
-        # For parallel coordinates, use a general title.
+    elif "parallel" in ctype:
         plt.title(f"{chart_type} Visualization")
+
 
     plot_path = os.path.join(PLOT_DIR, "generated_visualization.png")
     plt.savefig(plot_path)
