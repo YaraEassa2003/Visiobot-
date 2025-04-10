@@ -12,6 +12,8 @@ from flask import send_file
 import re
 import time
 import json
+from dateutil.relativedelta import relativedelta  # Add import near the top
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -219,14 +221,46 @@ def final_plot():
             return jsonify({"error": "No final chart type or dataset found."}), 400
 
         df = pd.read_csv(dataset_path)
+
+        # Check for a time filter phrase in the user_request that could be in days, weeks, months or years
+        import re
+        time_match = re.search(r"last\s+(\d+)\s+(day|days|week|weeks|month|months|year|years)", user_request, re.IGNORECASE)
+        if time_match:
+            num = int(time_match.group(1))
+            unit = time_match.group(2).lower()
+            # Look for a date column – assumes the column name contains "date"
+            date_columns = [col for col in df.columns if "date" in col.lower()]
+            if date_columns:
+                date_col = date_columns[0]
+                # Convert to datetime; any conversion errors become NaT
+                df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+                max_date = df[date_col].max()
+                if pd.notnull(max_date):
+                    # Create a DateOffset based on the time unit
+                    if unit in ['day', 'days']:
+                        offset = pd.DateOffset(days=num)
+                    elif unit in ['week', 'weeks']:
+                        offset = pd.DateOffset(weeks=num)
+                    elif unit in ['month', 'months']:
+                        offset = pd.DateOffset(months=num)
+                    elif unit in ['year', 'years']:
+                        offset = pd.DateOffset(years=num)
+                    else:
+                        offset = pd.DateOffset(months=num)  # default fallback
+
+                    cutoff = max_date - offset
+                    df = df[df[date_col] >= cutoff]
+                    print(f"UPDATE: Data filtered by last {num} {unit} using date column '{date_col}'.")
+        # ===================== UPDATE END =====================
         all_columns = list(df.columns)
 
         prompt = (
             "Return only valid JSON. No extra text.\n"
             f"Columns: {', '.join(all_columns)}.\n"
             f"User wants: '{user_request}'.\n"
-            "Which columns should be x_axis and y_axis?\n"
-            "Format: {\"x_axis\": \"<col1>\", \"y_axis\": \"<col2>\"}"
+            "If user wants a normal chart, return {\"x_axis\":\"col1\",\"y_axis\":\"col2\"}.\n"
+            "If user wants parallel coordinates, return "
+            "{\"chart_type\":\"parallel\",\"feature_columns\":[\"colA\",\"colB\"],\"class_column\":\"class\"}.\n"
         )
 
         gpt_response = gpt_gateway.handle_chat(prompt)
@@ -242,23 +276,56 @@ def final_plot():
         except json.JSONDecodeError:
             return jsonify({"error": "Failed to parse JSON from GPT's response."}), 500
 
-        x_axis = parsed.get("x_axis")
-        y_axis = parsed.get("y_axis")
-        if not x_axis or not y_axis:
-            return jsonify({"error": "GPT JSON missing x_axis or y_axis."}), 500
+        # Check if GPT returned parallel-coordinates keys, or normal x/y
+        chart_type_key = parsed.get("chart_type", "").lower()
+        used_cols_str = ""
+        subset_summary = ""
 
-        plot_path = model_utils.generate_final_plot(df, x_axis, y_axis, final_chart_type)
+        if chart_type_key == "parallel":
+            # ADDED: For parallel coordinates
+            feature_cols = parsed.get("feature_columns", [])
+            class_col = parsed.get("class_column")
+            if not feature_cols or not class_col:
+                return jsonify({"error": "Invalid parallel coordinates JSON: missing feature_columns or class_column."}), 400
 
-        summary_stats = df.describe().to_string()
+            plot_path = model_utils.generate_final_plot(
+                df=df,
+                chart_type=final_chart_type,  # "Parallel Coordinates"
+                x_axis=None,                  # Not used for parallel coords
+                y_axis=None,                  # Not used for parallel coords
+                feature_columns=feature_cols, # ADDED
+                class_column=class_col        # ADDED
+            )
+
+            used_cols_str = f"Feature Columns: {', '.join(feature_cols)}, Class Column: {class_col}"
+            numeric_subset = [col for col in feature_cols if pd.api.types.is_numeric_dtype(df[col])]
+            if numeric_subset:
+                subset_df = df[numeric_subset].copy()
+                subset_summary = subset_df.describe().to_string()
+            else:
+                subset_summary = "No numeric columns in feature_columns."
+        else:
+            # Normal 2D chart with x_axis, y_axis
+            x_axis = parsed.get("x_axis")
+            y_axis = parsed.get("y_axis")
+            if not x_axis or not y_axis:
+                return jsonify({"error": "GPT JSON missing x_axis or y_axis."}), 500
+
+            plot_path = model_utils.generate_final_plot(df, x_axis, y_axis, final_chart_type)
+            used_cols_str = f"X-axis: {x_axis}, Y-axis: {y_axis}"
+            # ADDED: Only describe the two chosen columns
+            subset_df = df[[x_axis, y_axis]].copy()
+            subset_summary = subset_df.describe().to_string()
 
         explanation_prompt = f"""
 You are a seasoned business intelligence analyst interpreting a '{final_chart_type}' 
-plot of '{y_axis}' vs '{x_axis}'. Although you do not see the actual image, 
-here is the dataset summary:
-{summary_stats}
+chart. The user specifically chose these columns: {used_cols_str}.
+
+Below is the summary of just those columns:
+{subset_summary}
 
 In 2–3 sentences, state the most important insights that will impact business decisions. 
-Use direct, confident language (e.g., "The plot shows...") and avoid numbering your points.
+Use direct, confident language (e.g., "The plot shows..."), and do not mention columns not shown here.
         """
 
         plot_description = gpt_gateway.handle_chat(explanation_prompt)
@@ -268,12 +335,13 @@ Use direct, confident language (e.g., "The plot shows...") and avoid numbering y
         plot_url = f"{base_url}/plot.png?cb={cache_buster}"
 
         return jsonify({
-            "message": f"Here is your {final_chart_type} for '{y_axis}' and '{x_axis}'.",
+            "message": f"Here is your {final_chart_type} using {used_cols_str}.",
             "plot_description": plot_description.strip(),
             "plot_url": plot_url,
-            "plot_title": f"{final_chart_type} of {y_axis} vs {x_axis}",  # New field!
+            "plot_title": f"{final_chart_type} Visualization",  # New field!
             "ask_reuse": "Would you like to visualize something else using this same dataset, purpose, and target audience preferences? (Yes/No)"
         })
+    
 
 
 

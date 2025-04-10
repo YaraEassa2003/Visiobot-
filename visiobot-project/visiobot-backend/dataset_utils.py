@@ -46,22 +46,22 @@ def determine_dimension(data, df=None, ask_gpt_for_hierarchy=False):
     return dimension
 
 def is_one_to_many_hierarchy(df):
-    cols = df.columns
-    if len(cols) < 2:
+    """
+    Determines whether the DataFrame exhibits a one-to-many (hierarchical) structure.
+    Returns True only if there are at least 3 columns and at least one of the potential
+    parent columns contains duplicate values (indicating repetition).
+    """
+    # If there are fewer than 3 columns, we cannot really have a multi-level hierarchy.
+    if len(df.columns) < 3:
         return False
-    
-    for i in range(len(cols) - 1):
-        parent_col = cols[i]
-        child_col = cols[i + 1]
-        
-        # For each (parent, child) pair, check if child belongs to >1 parent
-        combos = df[[parent_col, child_col]].drop_duplicates()
-        child_group = combos.groupby(child_col)[parent_col].nunique()
-        
-        # If ANY child value appears under more than one parent, not strictly hierarchical
-        if any(child_group > 1):
-            return False
-    return True
+
+    # Check each column except the last one. If any column has duplicate values,
+    # that indicates a potential one-to-many relationship.
+    for col in df.columns[:-1]:
+        if df[col].duplicated().any():
+            return True
+    return False
+
 
 
 def maybe_refine_to_hierarchical_with_gpt(current_dimension, df):

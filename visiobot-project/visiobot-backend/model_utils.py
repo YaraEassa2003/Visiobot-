@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from flask import request
 import tensorflow as tf
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -281,18 +282,54 @@ Use <strong> tags for bold text, and do not use ** for bolding.
 
     return explanation, note_html
 
-def generate_final_plot(df, x_axis, y_axis, chart_type):
+def generate_final_plot(df, x_axis, y_axis, chart_type, feature_columns=None, class_column=None):
     plt.close("all") 
     plt.figure(figsize=(8, 5))
     ctype = chart_type.lower()
     print("DEBUG: ctype =", ctype)
     
     if "histogram" in ctype:
+        # UPDATED: Gather all numeric columns
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+
+        # If user didn't specify or the specified `x_axis` doesn't exist, we handle it:
+        if not x_axis or x_axis not in df.columns:
+            # If exactly one numeric column, use it automatically:
+            if len(numeric_cols) == 1:
+                print(f"UPDATE: Only one numeric column found: {numeric_cols[0]}. Using it for histogram.")
+                x_axis = numeric_cols[0]
+            else:
+                # If multiple numeric columns, fallback to the first
+                if numeric_cols:
+                    print("UPDATE: x_axis not found. Falling back to first numeric column:", numeric_cols[0])
+                    x_axis = numeric_cols[0]
+                else:
+                    raise ValueError("No numeric columns found for histogram.")
+
         plt.hist(df[x_axis], bins=10, color="blue", alpha=0.7, edgecolor="black", linewidth=1.0)
+        
+        # UPDATED: Label the Y-axis as "Count" for clarity in a histogram
+        plt.xlabel(x_axis)
+        plt.ylabel("Count")
+        plt.title(f"Histogram of {x_axis}")
     elif "pie" in ctype:
+    # For pie charts, we assume x_axis is the "grouping" column and y_axis is the numeric value.
+        if x_axis not in df.columns:
+            numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+            if numeric_cols:
+                print("UPDATE: x_axis not found. Falling back to first numeric column:", numeric_cols[0])
+                x_axis = numeric_cols[0]
+            else:
+                raise ValueError("No numeric columns found for pie chart.")
+        if not y_axis or y_axis not in df.columns:
+            y_axis = x_axis
         data = df.groupby(x_axis)[y_axis].sum()
         plt.pie(data, labels=data.index, autopct="%1.1f%%")
-    
+        # Pie charts do not typically have axis labels.
+        plt.xlabel("")  
+        plt.ylabel("")
+        # UPDATED: Title now directly explains the distribution of the grouping column.
+        plt.title(f"Pie Chart: Distribution of {x_axis}")
 
     elif "treemap" in ctype:
         try:
@@ -363,9 +400,22 @@ def generate_final_plot(df, x_axis, y_axis, chart_type):
     elif "parallel" in ctype:
         try:
             from pandas.plotting import parallel_coordinates
-            parallel_coordinates(df, class_column=x_axis)
-        except Exception:
-            plt.text(0.5, 0.5, "Parallel Coordinates not implemented", ha="center")
+            # If feature_columns and class_column are provided, use them; else, attempt to infer.
+            if feature_columns is not None and class_column is not None:
+                plot_df = df[feature_columns + [class_column]]
+            else:
+                # Fallback: use all numeric columns plus the last non-numeric column (if available) as the class column.
+                numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
+                non_numeric_cols = df.select_dtypes(exclude=["number"]).columns.tolist()
+                if non_numeric_cols:
+                    plot_df = df[numeric_cols + [non_numeric_cols[-1]]]
+                    class_column = non_numeric_cols[-1]
+                else:
+                    plot_df = df.copy()
+            parallel_coordinates(plot_df, class_column=class_column)
+        except Exception as e:
+            plt.text(0.5, 0.5, f"Parallel Coordinates rendering failed: {e}", ha="center")
+
     elif "scatter" in ctype:
         sns.scatterplot(x=df[x_axis], y=df[y_axis])
     elif "linked" in ctype:
@@ -391,10 +441,15 @@ def generate_final_plot(df, x_axis, y_axis, chart_type):
     else:
         plt.text(0.5, 0.5, f"Unsupported chart type: {chart_type}", ha="center")
     
-    plt.xlabel(x_axis)
-    plt.ylabel(y_axis)
-    plt.title(f"{chart_type} of {y_axis} vs {x_axis}")
     
+    if "parallel" not in ctype:
+        plt.xlabel(x_axis)
+        plt.ylabel(y_axis)
+        plt.title(f"{chart_type} of {y_axis} vs {x_axis}")
+    else:
+        # For parallel coordinates, use a general title.
+        plt.title(f"{chart_type} Visualization")
+
     plot_path = os.path.join(PLOT_DIR, "generated_visualization.png")
     plt.savefig(plot_path)
     plt.close()
