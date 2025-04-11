@@ -420,16 +420,22 @@ def generate_final_plot(df, x_axis, y_axis, chart_type, feature_columns=None, cl
         try:
             import networkx as nx
             G = nx.DiGraph()
-            nodes = df[x_axis].tolist()
-            for i in range(len(nodes) - 1):
-                G.add_edge(nodes[i], nodes[i + 1])
-            if len(nodes) == 1:
-                G.add_node(nodes[0])
-            pos = nx.spring_layout(G)
+            # If both x_axis and y_axis are provided and exist in the dataframe, use them as source and target.
+            if x_axis in df.columns and y_axis in df.columns:
+                for _, row in df.iterrows():
+                    G.add_edge(row[x_axis], row[y_axis])
+            else:
+                # Fallback: use the x_axis column to generate a chain of nodes.
+                nodes = df[x_axis].tolist()
+                for i in range(len(nodes) - 1):
+                    G.add_edge(nodes[i], nodes[i + 1])
+                if len(nodes) == 1:
+                    G.add_node(nodes[0])
+            pos = nx.spring_layout(G, seed=42)
             nx.draw_networkx_nodes(G, pos, node_color='skyblue', node_size=500)
             nx.draw_networkx_edges(G, pos, edge_color='gray')
             nx.draw_networkx_labels(G, pos, font_color='black')
-            plt.title("Linked Graph Based on Your Data")
+            plt.title("Linked Graph Visualization")
             plt.axis("off")
         except Exception as e:
             plt.text(0.5, 0.5, f"Linked Graph rendering failed: {e}", ha="center")
