@@ -108,11 +108,49 @@ Return one word only: "Hierarchical" or "NotHierarchical".
     except Exception as e:
         print(f"GPT error: {e}")
         return current_dimension
+import numpy as np
+import pandas as pd
+
+def is_truly_ordinal(series, threshold=10, tolerance=1e-6):
+    """
+    Determines whether a numeric series is truly ordinal.
+    
+    Parameters:
+      series (pd.Series): The series to check.
+      threshold (int): Maximum number of unique values to consider ordinal.
+      tolerance (float): Tolerance for comparing differences.
+    
+    Returns:
+      bool: True if the series is considered ordinal, otherwise False.
+    """
+    # Drop missing values and get sorted unique values.
+    unique_vals = np.sort(series.dropna().unique())
+    
+    # Must have few unique values.
+    if len(unique_vals) > threshold:
+        return False
+    
+    # Check that all values are essentially integers.
+    if not np.all(np.abs(unique_vals - unique_vals.astype(int)) < tolerance):
+        return False
+    
+    # Compute differences between consecutive unique values.
+    differences = np.diff(unique_vals)
+    
+    # If there's only one unique value, treat it as ordinal (degenerate case).
+    if len(differences) == 0:
+        return True
+    
+    # Check if all differences are equal within a tolerance.
+    if np.all(np.abs(differences - differences[0]) < tolerance):
+        return True
+    
+    return False
 
 def detect_primary_variable(df):
     """
     Determines the primary variable type in the dataset by analyzing feature types.
-    Categories: ordinal, categorical, continuous, geographical, or other.
+    Categories: ordinal, categorical, continuous, geographical, time, or other.
     """
     feature_types = {}
 
@@ -120,23 +158,39 @@ def detect_primary_variable(df):
         unique_values = df[col].nunique()
         dtype = df[col].dtype
 
-        if pd.api.types.is_numeric_dtype(df[col]):
-            if unique_values < 10:  
+        # Attempt to detect datetime for string columns
+        if pd.api.types.is_string_dtype(df[col]):
+            try:
+                parsed_dates = pd.to_datetime(df[col], errors="coerce")
+                # Check if the majority of values converted successfully
+                if parsed_dates.notna().sum() / len(parsed_dates) > 0.8:
+                    # Treat as a "time" variable (which you may choose to consider continuous)
+                    feature_types[col] = "time"
+                else:
+                    # It's a regular string column, so handle it as categorical
+                    if any(keyword in col.lower() for keyword in ["country", "state", "city", "region", "latitude", "longitude"]):
+                        feature_types[col] = "geographical"
+                    else:
+                        feature_types[col] = "categorical"
+            except Exception:
+                feature_types[col] = "categorical"
+        elif pd.api.types.is_numeric_dtype(df[col]):
+            if is_truly_ordinal(df[col]):
                 feature_types[col] = "ordinal"
             else:
                 feature_types[col] = "continuous"
-
-        elif pd.api.types.is_string_dtype(df[col]) or pd.api.types.is_categorical_dtype(df[col]):
-            if any(keyword in col.lower() for keyword in ["country", "state", "city", "region", "latitude", "longitude"]):
-                feature_types[col] = "geographical"
-            else:
-                feature_types[col] = "categorical"
-
+        elif pd.api.types.is_datetime64_any_dtype(df[col]):
+            feature_types[col] = "time"
         else:
             feature_types[col] = "other"
 
+    # Now, choose the primary variable based on highest unique values.
     primary_variable = max(feature_types, key=lambda x: df[x].nunique(), default=None)
-    return primary_variable, feature_types.get(primary_variable, "unknown")
+    # If it's a time variable, you may decide to promote it to continuous for visualization purposes.
+    primary_type = feature_types.get(primary_variable, "unknown")
+    if primary_type == "time":
+        primary_type = "continuous"
+    return primary_variable, primary_type
 
 def extract_dataset_info(file_path, use_gpt_for_hierarchy=False):
     """Extracts dataset properties as required by the trained model."""
