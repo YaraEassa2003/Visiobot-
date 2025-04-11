@@ -33,7 +33,7 @@ def determine_dimension(data, df=None, ask_gpt_for_hierarchy=False):
 
     # Optional step: Ask GPT if we want to see if the CSV is "Hierarchical."
     # This only makes sense if we have the DataFrame 'df'.
-    if ask_gpt_for_hierarchy and df is not None and (dimension == "ND" or dimension == "2D"): 
+    if ask_gpt_for_hierarchy and df is not None and (dimension == "ND" or dimension == "2D" and len(df.columns) >= 3): 
         if is_one_to_many_hierarchy(df):       # Summarize CSV structure for GPT:
             print("[DEBUG] Invoking maybe_refine_to_hierarchical_with_gpt()...")
             dimension_before = dimension
@@ -54,13 +54,15 @@ def is_one_to_many_hierarchy(df):
     # If there are fewer than 3 columns, we cannot really have a multi-level hierarchy.
     if len(df.columns) < 3:
         return False
+    # UPDATED: Ignore columns whose name contains "unnamed" (common with auto-generated indices)
+    relevant_columns = [col for col in df.columns[:-1] if "unnamed" not in col.lower()]
 
-    # Check each column except the last one. If any column has duplicate values,
-    # that indicates a potential one-to-many relationship.
-    for col in df.columns[:-1]:
+    # Check each remaining column; if any column has duplicate values, assume a one-to-many structure.
+    for col in relevant_columns:
         if df[col].duplicated().any():
             return True
     return False
+
 
 
 
@@ -99,13 +101,12 @@ Return one word only: "Hierarchical" or "NotHierarchical".
         gpt_response = handle_chat(prompt)
         # Normalize GPT's response
         response_lower = gpt_response.strip().lower()
-        if "hierarchical" in response_lower:
+        if response_lower == "hierarchical":
             return "Hierarchical"
         else:
             return current_dimension
     except Exception as e:
         print(f"GPT error: {e}")
-        # Fallback: keep original dimension
         return current_dimension
 
 def detect_primary_variable(df):
