@@ -12,7 +12,7 @@ from flask import send_file
 import re
 import time
 import json
-from dateutil.relativedelta import relativedelta  # Add import near the top
+from dateutil.relativedelta import relativedelta 
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -136,7 +136,7 @@ def next_visualization():
         chart_name, _ = global_data["recommendation_queue"][global_data["current_index"]]
         global_data["final_chart_type"] = chart_name 
         try:
-            return get_dataset_columns()  # This returns a JSON with the "final_message" field.
+            return get_dataset_columns() 
         except Exception as e:
             return jsonify({"error": f"Failed during final step: {str(e)}"}), 500
 
@@ -178,30 +178,69 @@ def serve_plot():
 
 @app.route("/get-dataset-columns", methods=["POST"])
 def get_dataset_columns():
-    """
-    Reads the uploaded dataset, extracts its column names,
-    and calls GPT with a minimal prompt:
-      - Just enumerates columns in <strong> tags
-      - Asks the user which columns they want to visualize
-    """
-    try:
-        dataset_path = global_data.get("dataset_path")
-        if not dataset_path:
-            return jsonify({"error": "Dataset not found."}), 400
+        """
+        Reads the uploaded dataset, extracts its column names,
+        and asks the user for specific inputs based on the chosen chart type.
+        """
+        try:
+            dataset_path = global_data.get("dataset_path")
+            if not dataset_path:
+                return jsonify({"error": "Dataset not found."}), 400
 
-        df = pd.read_csv(dataset_path)
-        columns = list(df.columns)
-        formatted_columns = ", ".join([f"<strong>{col}</strong>" for col in columns])
+            df = pd.read_csv(dataset_path)
+            cols = list(df.columns)
+            formatted_columns = ", ".join([f"<strong>{col}</strong>" for col in cols])
+            chart = global_data.get("final_chart_type", "").lower()
 
-        message = (
-            f"The dataset you uploaded contains columns: {formatted_columns}. "
-            "Which columns would you like to use for the X-axis, Y-axis, or both, and what insights would you like to visualize?"
-        )
-        return jsonify({"final_message": message})
+            prompts = {
+                "histogram":
+                    f"The dataset you uploaded contains columns: {formatted_columns}. "
+                    "Which single numeric column should I use for the X-axis (to plot its distribution)?",
 
-    except Exception as e:
-        return jsonify({"error": f"Failed to retrieve dataset columns: {str(e)}"}), 500
+                "line chart":
+                    f"The dataset you uploaded contains columns: {formatted_columns}. "
+                    "Which column is your time (or sequential) variable for the X-axis, "
+                    "and which numeric column for the Y-axis (to show trends)?",
 
+                "scatter plot":
+                    f"The dataset you uploaded contains columns: {formatted_columns}. "
+                    "Which two numeric columns should I use for the X-axis and Y-axis to show their relationship?",
+
+                "pie chart":
+                    f"The dataset you uploaded contains columns: {formatted_columns}. "
+                    "Which categorical column should define the slices and which numeric column should determine slice size?",
+
+                "treemap":
+                    f"The dataset you uploaded contains columns: {formatted_columns}. "
+                    "Which single categorical column should define the tiles, "
+                    "and which numeric column should determine their sizes?",
+
+                "map":
+                    f"The dataset you uploaded contains columns: {formatted_columns}. "
+                    "Which column contains your geographic identifiers (e.g., country or state names or codes), "
+                    "and which numeric column should color the map?",
+
+                "parallel coordinates":
+                    f"The dataset you uploaded contains columns: {formatted_columns}. "
+                    "Which numeric columns should I plot as features, "
+                    "and which categorical column should I use to color/group the lines?",
+
+                "linked graph":
+                    f"The dataset you uploaded contains columns: {formatted_columns}. "
+                    "Which column should be the source node, "
+                    "and which column should be the target node for the network edges?"
+            }
+
+            prompt = prompts.get(
+                chart,
+                f"The dataset you uploaded contains columns: {formatted_columns}. "
+                "Which columns would you like to use, and what insight would you like to visualize?"
+            )
+
+            return jsonify({"final_message": prompt})
+
+        except Exception as e:
+            return jsonify({"error": f"Failed to retrieve dataset columns: {str(e)}"}), 500
 
 @app.route("/final-plot", methods=["POST"])
 def final_plot():
@@ -222,21 +261,17 @@ def final_plot():
 
         df = pd.read_csv(dataset_path)
 
-        # Check for a time filter phrase in the user_request that could be in days, weeks, months or years
         import re
         time_match = re.search(r"last\s+(\d+)\s+(day|days|week|weeks|month|months|year|years)", user_request, re.IGNORECASE)
         if time_match:
             num = int(time_match.group(1))
             unit = time_match.group(2).lower()
-            # Look for a date column – assumes the column name contains "date"
             date_columns = [col for col in df.columns if "date" in col.lower()]
             if date_columns:
                 date_col = date_columns[0]
-                # Convert to datetime; any conversion errors become NaT
                 df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
                 max_date = df[date_col].max()
                 if pd.notnull(max_date):
-                    # Create a DateOffset based on the time unit
                     if unit in ['day', 'days']:
                         offset = pd.DateOffset(days=num)
                     elif unit in ['week', 'weeks']:
@@ -246,12 +281,11 @@ def final_plot():
                     elif unit in ['year', 'years']:
                         offset = pd.DateOffset(years=num)
                     else:
-                        offset = pd.DateOffset(months=num)  # default fallback
+                        offset = pd.DateOffset(months=num) 
 
                     cutoff = max_date - offset
                     df = df[df[date_col] >= cutoff]
                     print(f"UPDATE: Data filtered by last {num} {unit} using date column '{date_col}'.")
-        # ===================== UPDATE END =====================
         all_columns = list(df.columns)
 
         prompt = (
@@ -261,6 +295,7 @@ def final_plot():
             "If user wants a normal chart, return {\"x_axis\":\"col1\",\"y_axis\":\"col2\"}.\n"
             "If user wants parallel coordinates, return "
             "{\"chart_type\":\"parallel\",\"feature_columns\":[\"colA\",\"colB\"],\"class_column\":\"class\"}.\n"
+            "If user wants a linked graph, return {\"x_axis\":\"<source_column>\",\"y_axis\":\"<target_column>\"}.\n"
         )
 
         gpt_response = gpt_gateway.handle_chat(prompt)
@@ -276,13 +311,11 @@ def final_plot():
         except json.JSONDecodeError:
             return jsonify({"error": "Failed to parse JSON from GPT's response."}), 500
 
-        # Check if GPT returned parallel-coordinates keys, or normal x/y
         chart_type_key = parsed.get("chart_type", "").lower()
         used_cols_str = ""
         subset_summary = ""
 
         if chart_type_key == "parallel":
-            # ADDED: For parallel coordinates
             feature_cols = parsed.get("feature_columns", [])
             class_col = parsed.get("class_column")
             if not feature_cols or not class_col:
@@ -290,11 +323,11 @@ def final_plot():
 
             plot_path = model_utils.generate_final_plot(
                 df=df,
-                chart_type=final_chart_type,  # "Parallel Coordinates"
-                x_axis=None,                  # Not used for parallel coords
-                y_axis=None,                  # Not used for parallel coords
-                feature_columns=feature_cols, # ADDED
-                class_column=class_col        # ADDED
+                chart_type=final_chart_type,  
+                x_axis=None,                  
+                y_axis=None,                 
+                feature_columns=feature_cols, 
+                class_column=class_col        
             )
 
             used_cols_str = f"Feature Columns: {', '.join(feature_cols)}, Class Column: {class_col}"
@@ -305,7 +338,6 @@ def final_plot():
             else:
                 subset_summary = "No numeric columns in feature_columns."
         else:
-            # Normal 2D chart with x_axis, y_axis
             x_axis = parsed.get("x_axis")
             y_axis = parsed.get("y_axis")
             if not x_axis or not y_axis:
@@ -313,9 +345,31 @@ def final_plot():
 
             plot_path = model_utils.generate_final_plot(df, x_axis, y_axis, final_chart_type)
             used_cols_str = f"X-axis: {x_axis}, Y-axis: {y_axis}"
-            # ADDED: Only describe the two chosen columns
             subset_df = df[[x_axis, y_axis]].copy()
             subset_summary = subset_df.describe().to_string()
+
+            # --- TAILORED MESSAGE SECTION ---
+        chart = final_chart_type.lower()
+        if "histogram" in chart:
+            msg = f"Here is your Histogram of {x_axis} showing its frequency distribution."
+        elif "pie" in chart:
+            msg = f"Here is your Pie Chart showing how the parts of {x_axis} make up the whole."
+        elif "line" in chart:
+            msg = f"Here is your Line Chart of {y_axis} over {x_axis} to illustrate the trend."
+        elif "scatter" in chart:
+            msg = f"Here is your Scatter Plot comparing {y_axis} against {x_axis}."
+        elif "treemap" in chart:
+            msg = f"Here is your Treemap of {y_axis} by {x_axis}."
+        elif "map" in chart:
+            msg = f"Here is your Map of {y_axis} across {x_axis}."
+        elif "linked" in chart:
+            msg = f"Here is your Linked Graph connecting each {x_axis} to {y_axis}."
+        elif "parallel" in chart:
+            feat_list = ", ".join(feature_cols)
+            msg = f"Here is your Parallel Coordinates chart comparing {feat_list} grouped by {class_col}."
+        else:
+            msg = f"Here is your {final_chart_type} using {used_cols_str}."
+        # --- END TAILORED MESSAGE SECTION ---
 
         explanation_prompt = f"""
 You are a seasoned business intelligence analyst interpreting a '{final_chart_type}' 
@@ -331,14 +385,14 @@ Use direct, confident language (e.g., "The plot shows..."), and do not mention c
         plot_description = gpt_gateway.handle_chat(explanation_prompt)
 
         base_url = "https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev"
-        cache_buster = int(time.time())  # e.g. 1679000000
+        cache_buster = int(time.time()) 
         plot_url = f"{base_url}/plot.png?cb={cache_buster}"
 
         return jsonify({
-            "message": f"Here is your {final_chart_type} using {used_cols_str}.",
+            "message": msg,
             "plot_description": plot_description.strip(),
             "plot_url": plot_url,
-            "plot_title": f"{final_chart_type} Visualization",  # New field!
+            "plot_title": f"{final_chart_type} Visualization", 
             "ask_reuse": "Would you like to visualize something else using this same dataset, purpose, and target audience preferences? (Yes/No)"
         })
     
@@ -357,7 +411,6 @@ def reuse_dataset():
     if not global_data.get("dataset_path"):
         return jsonify({"error": "No dataset found. Please upload a dataset first."}), 400
     try:
-        # Reuse the existing get_dataset_columns function to ask the user for new column selections.
         return get_dataset_columns()
     except Exception as e:
         return jsonify({"error": f"Failed to retrieve dataset columns: {str(e)}"}), 500
@@ -380,10 +433,8 @@ def chat():
             "End by inviting them to upload."
         )
         try:
-            # If GPT works, great
             response = gpt_gateway.handle_chat(greeting_prompt)
         except Exception as e:
-            # Fallback if GPT fails
             print(f"❌ GPT error: {e}")
             response = (
                 "Hello! I’m VisioBot. Currently I’m unable to use GPT, "

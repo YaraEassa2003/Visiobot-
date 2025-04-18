@@ -356,7 +356,6 @@
   let waitingForRestart = false;
   let waitingForReuse = false;
 
-  // A global array to hold any text that should appear ONLY after the image is loaded
   let pendingAfterImageContent = [];
 
   const chatbox = document.getElementById("chatbox");
@@ -419,7 +418,6 @@
     }
   }
 
-  // Helper that flushes any queued messages, then scrolls
   function flushPendingAfterImage() {
   pendingAfterImageContent.forEach((htmlSnippet) => {
     chatbox.innerHTML += htmlSnippet;
@@ -431,13 +429,11 @@
 }
 
 
-  // Create + append the image with an onload that flushes queued text
   function appendImageAndQueue(plotUrl, plotTitle) {
     const safeFilename = plotTitle
       ? plotTitle.replace(/\s+/g, '_').replace(/[^\w_]/g, '') + '.png'
       : 'visualization.png';
 
-    // Build container with DOM methods
     const container = document.createElement("span");
     container.style.position = "relative";
     container.style.display = "inline-block";
@@ -452,7 +448,6 @@
     img.style.borderRadius = "8px";
     img.style.margin = "0 auto";
     img.style.display = "block";
-    // When image is loaded, flush queued messages
     img.onload = function() {
       flushPendingAfterImage();
     };
@@ -631,12 +626,10 @@
         chatbox.innerHTML += `<p class="bot-message">${data.message}</p>`;
         scrollToBottom();
 
-        // If there's an image, append it via DOM, then queue texts
         if (data.plot_url) {
           appendImageAndQueue(data.plot_url, data.plot_title);
         }
 
-        // Instead of immediately appending text, we push it to the queue if there's an image
         if (data.plot_description) {
           pendingAfterImageContent.push(`<p class="bot-message">${data.plot_description}</p>`);
         }
@@ -648,7 +641,6 @@
           pendingAfterImageContent.push(`<p class="bot-message">${data.ask_restart}</p>`);
           waitingForRestart = true;
         }
-        // If there's no image, flush right away
         if (!data.plot_url) {
           flushPendingAfterImage();
         }
@@ -775,12 +767,10 @@
       scrollToBottom();
     }
 
-    // If there's a plot, append it via DOM
     if (data.plot_url) {
       appendImageAndQueue(data.plot_url, data.plot_title);
     }
 
-    // Now queue any text that must appear AFTER the image
     if (data.plot_description) {
       pendingAfterImageContent.push(`<p class="bot-message">${data.plot_description}</p>`);
     }
@@ -789,7 +779,6 @@
       waitingForFeedback = true;
     }
 
-    // If there's no image, flush right now
     if (!data.plot_url) {
       flushPendingAfterImage();
     }
