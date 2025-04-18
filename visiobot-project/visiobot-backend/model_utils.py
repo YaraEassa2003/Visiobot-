@@ -60,20 +60,19 @@ def preprocess_input(user_input):
     print("Training Mean & Std Dev:", scaler.mean_, scaler.scale_)
 
     input_df = pd.DataFrame(columns=feature_columns)
-    input_df.loc[0] = 0  # Initialize all values to zero
-
+    input_df.loc[0] = 0
     input_df["No_of_Attributes"] = standardized_values[0, 0]
     input_df["No_of_Records"] = standardized_values[0, 1]
 
     categorical_features = ["Data_Dimensions", "Primary_Variable (Data Type)", "Task (Purpose)", "Target Audience"]
     for feature in categorical_features:
         col_name = f"{feature}_{user_input[feature]}"
-        if col_name in one_hot_columns:  # Ensure only valid columns are set
+        if col_name in one_hot_columns:
             input_df[col_name] = 1
 
     input_df = input_df.fillna(0)
 
-    expected_features = len(feature_columns)  # Use total features saved in pipeline
+    expected_features = len(feature_columns) 
     final_input = input_df[feature_columns].to_numpy()[:, :expected_features]
 
     print("🔍 Checking Preprocessed Input Before Model Prediction:")
@@ -93,16 +92,16 @@ def get_prediction(user_input):
     if input_data.shape[1] != expected_features:
         return "❌ Feature mismatch! Expected {}, but got {}.".format(expected_features, input_data.shape[1]), None
 
-    prediction = model.predict(input_data)[0]  # Get probability scores
+    prediction = model.predict(input_data)[0] 
 
-    ranked_indices = np.argsort(prediction)[::-1]  # Sort in descending order
+    ranked_indices = np.argsort(prediction)[::-1] 
     ranked_visualizations = [(chart_type_mapping[i + 1], prediction[i]) for i in ranked_indices]
 
-    print(f"🏆 Ranked Predictions: {ranked_visualizations}")  # Debugging
+    print(f"🏆 Ranked Predictions: {ranked_visualizations}") 
 
     visualization_plot = generate_visualization(ranked_indices[0] + 1)
 
-    return ranked_visualizations, visualization_plot  # Return ranked list with plot
+    return ranked_visualizations, visualization_plot 
 
 
 
@@ -122,14 +121,13 @@ def generate_visualization(chart_type):
     plt.figure(figsize=(6, 4))
 
     if chart_type == 1:
-        # Histogram
         data = np.random.randn(100)
         plt.hist(data, bins=10, color="blue", alpha=0.7)
         plt.title("Histogram (Placeholder)")
 
     elif chart_type == 2:
         x = np.arange(50)
-        y = np.random.randn(50).cumsum()  # cumsum to simulate a trending line
+        y = np.random.randn(50).cumsum() 
         plt.plot(x, y, marker="o", linestyle="-", color="green")
         plt.title("Line Chart (Placeholder)")
 
@@ -250,27 +248,27 @@ def get_explanation(prediction, user_input):
         )
 
     prompt = f"""
-Explain why a <strong>{prediction}</strong> is the best choice based on the dataset details below.
+        Explain why a <strong>{prediction}</strong> is the best choice based on the dataset details below.
 
-Keep it <strong>short, simple, and natural</strong>. Use clear, easy-to-understand language. 
-<strong>List all six inputs first</strong>, then give a <strong>brief, direct reason</strong> 
-why this chart is the best choice. Avoid technical terms like "intuitive" or "effectively."
-Use <strong> tags for bold text, and do not use ** for bolding.
+        Keep it <strong>short, simple, and natural</strong>. Use clear, easy-to-understand language. 
+        <strong>List all six inputs first</strong>, then give a <strong>brief, direct reason</strong> 
+        why this chart is the best choice. Avoid technical terms like "intuitive" or "effectively."
+        Use <strong> tags for bold text, and do not use ** for bolding.
 
-    <strong>Dataset Details:</strong>
-    - <strong>Data Dimension:</strong> {user_input['Data_Dimensions']}
-    - <strong>Number of Attributes:</strong> {user_input['No_of_Attributes']}
-    - <strong>Number of Records:</strong> {user_input['No_of_Records']}
-    - <strong>Primary Variable Type:</strong> {user_input['Primary_Variable (Data Type)']}
-    - <strong>Task (Purpose):</strong> {user_input['Task (Purpose)']}
-    - <strong>Target Audience:</strong> {user_audience}
+            <strong>Dataset Details:</strong>
+            - <strong>Data Dimension:</strong> {user_input['Data_Dimensions']}
+            - <strong>Number of Attributes:</strong> {user_input['No_of_Attributes']}
+            - <strong>Number of Records:</strong> {user_input['No_of_Records']}
+            - <strong>Primary Variable Type:</strong> {user_input['Primary_Variable (Data Type)']}
+            - <strong>Task (Purpose):</strong> {user_input['Task (Purpose)']}
+            - <strong>Target Audience:</strong> {user_audience}
 
-    <strong>Example Output Format:</strong>  
-    Since your dataset's dimension is <strong>2D</strong>, has <strong>9 attributes</strong>, 
-    <strong>4177 records</strong>, main primary variable is <strong>continuous</strong>, and you chose 
-    <strong>comparison</strong>, a <strong>Line Chart</strong> fits best. It helps track changes over time 
-    in a simple and clear way, making it easy for a <strong>{user_audience}</strong> to understand.
-    """
+            <strong>Example Output Format:</strong>  
+            Since your dataset's dimension is <strong>2D</strong>, has <strong>9 attributes</strong>, 
+            <strong>4177 records</strong>, main primary variable is <strong>continuous</strong>, and you chose 
+            <strong>comparison</strong>, a <strong>Line Chart</strong> fits best. It helps track changes over time 
+            in a simple and clear way, making it easy for a <strong>{user_audience}</strong> to understand.
+            """
 
     try:
         explanation = gpt_gateway.handle_chat(prompt)
@@ -289,17 +287,13 @@ def generate_final_plot(df, x_axis, y_axis, chart_type, feature_columns=None, cl
     print("DEBUG: ctype =", ctype)
     
     if "histogram" in ctype:
-        # Gather all numeric columns
         numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
 
-        # If user didn't specify or the specified `x_axis` doesn't exist, we handle it:
         if not x_axis or x_axis not in df.columns:
-            # If exactly one numeric column, use it automatically:
             if len(numeric_cols) == 1:
                 print(f"UPDATE: Only one numeric column found: {numeric_cols[0]}. Using it for histogram.")
                 x_axis = numeric_cols[0]
             else:
-                # If multiple numeric columns, fallback to the first
                 if numeric_cols:
                     print("UPDATE: x_axis not found. Falling back to first numeric column:", numeric_cols[0])
                     x_axis = numeric_cols[0]
@@ -307,13 +301,11 @@ def generate_final_plot(df, x_axis, y_axis, chart_type, feature_columns=None, cl
                     raise ValueError("No numeric columns found for histogram.")
 
         plt.hist(df[x_axis], bins=10, color="blue", alpha=0.7, edgecolor="black", linewidth=1.0)
-        # Label the Y-axis as "Count" for clarity in a histogram
         plt.xlabel(x_axis)
         plt.ylabel("Count")
         plt.title(f"Histogram of {x_axis}")
 
     elif "pie" in ctype:
-        # For pie charts, we assume x_axis is the "grouping" column and y_axis is the numeric value.
         if x_axis not in df.columns:
             numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
             if numeric_cols:
@@ -398,11 +390,9 @@ def generate_final_plot(df, x_axis, y_axis, chart_type, feature_columns=None, cl
     elif "parallel" in ctype:
         try:
             from pandas.plotting import parallel_coordinates
-            # If feature_columns and class_column are provided, use them; else, attempt to infer.
             if feature_columns is not None and class_column is not None:
                 plot_df = df[feature_columns + [class_column]]
             else:
-                # Fallback: use all numeric columns plus the last non-numeric column (if available) as the class column.
                 numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
                 non_numeric_cols = df.select_dtypes(exclude=["number"]).columns.tolist()
                 if non_numeric_cols:
@@ -420,12 +410,10 @@ def generate_final_plot(df, x_axis, y_axis, chart_type, feature_columns=None, cl
         try:
             import networkx as nx
             G = nx.DiGraph()
-            # If both x_axis and y_axis are provided and exist in the dataframe, use them as source and target.
             if x_axis in df.columns and y_axis in df.columns:
                 for _, row in df.iterrows():
                     G.add_edge(row[x_axis], row[y_axis])
             else:
-                # Fallback: use the x_axis column to generate a chain of nodes.
                 nodes = df[x_axis].tolist()
                 for i in range(len(nodes) - 1):
                     G.add_edge(nodes[i], nodes[i + 1])
