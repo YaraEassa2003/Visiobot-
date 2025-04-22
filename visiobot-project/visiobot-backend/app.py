@@ -72,7 +72,7 @@ def process_dataset():
         return jsonify({"error": f"Dataset processing failed: {str(e)}"}), 500
 
     return jsonify({
-        "message": "Dataset processed successfully. Now provide the Task (Purpose) and Target Audience.",
+        "message": "Dataset processed successfully. Now provide the Task (Purpose) and Audience.",
         "dataset_details": dataset_info
     })
 
@@ -402,8 +402,8 @@ Use direct, confident language (e.g., "The plot shows..."), and do not mention c
             "message": msg,
             "plot_description": plot_description.strip(),
             "plot_url": plot_url,
-            "plot_title": f"{final_chart_type} Visualization", 
-            "ask_reuse": "Would you like to visualize something else using this same dataset, purpose, and target audience preferences? (Yes/No)"
+            "plot_title": f"{final_chart_type} Visualization",
+            "ask_reuse": "Would you like to visualize something else using this same dataset, purpose, and audience preferences? (Yes/No)"
         })
     
 
@@ -419,7 +419,7 @@ Use direct, confident language (e.g., "The plot shows..."), and do not mention c
 def reuse_dataset():
     """
     Provides the user with a list of dataset columns to select new visualization axes,
-    using the same dataset, purpose, and target audience preferences.
+    using the same dataset, purpose, and audience preferences.
     """
     if not global_data.get("dataset_path"):
         return jsonify({"error": "No dataset found. Please upload a dataset first."}), 400
@@ -460,7 +460,7 @@ def chat():
     elif "purpose" in msg_lower:
         return jsonify({"response": "What is the purpose of your visualization? (Distribution, Relationship, Comparison, Trends)"})
     elif "audience" in msg_lower:
-        return jsonify({"response": "Who is your target audience? (Expert or Non-Expert)"})
+        return jsonify({"response": "What’s your skill level (or your audience’s): Expert or Non‑Expert?"})
     elif "done" in msg_lower or "generate" in msg_lower:
         return jsonify({"response": "Processing your data... Generating a visualization now."})
 

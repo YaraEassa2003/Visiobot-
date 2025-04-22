@@ -427,8 +427,6 @@
     scrollToBottom();
   });
 }
-
-
   function appendImageAndQueue(plotUrl, plotTitle) {
     const safeFilename = plotTitle
       ? plotTitle.replace(/\s+/g, '_').replace(/[^\w_]/g, '') + '.png'
@@ -525,7 +523,7 @@
 
     if (!purpose) {
       purpose = userInputValue;
-      chatbox.innerHTML += `<p class="bot-message">Who is your target audience? (Expert or Non-Expert)</p>`;
+      chatbox.innerHTML += `<p class="bot-message">What’s your skill level (or your audience’s): Expert or Non‑Expert?</p>`;
       scrollToBottom();
       return;
     }
@@ -560,19 +558,29 @@
     });
   }
 
-  async function fetchWithTyping(url, options) {
-    addTypingIndicator();
+  async function fetchWithTyping(url, options, retries = 5, retryDelay = 100) {
+  addTypingIndicator();
+  for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      let resp = await fetch(url, options);
-      let data = await resp.json();
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const resp = await fetch(url, options);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      // keep the little “thinking…” pause you had
+      await new Promise(res => setTimeout(res, 500));
       removeTypingIndicator();
       return data;
-    } catch (e) {
-      removeTypingIndicator();
-      throw e;
+    } catch (err) {
+      if (attempt === retries) {
+        // last attempt: clean up and re‑throw
+        removeTypingIndicator();
+        throw err;
+      }
+      // otherwise wait a bit and retry
+      await new Promise(res => setTimeout(res, retryDelay));
     }
   }
+}
+
 
   async function handleRestartFlow(userInputValue) {
     waitingForRestart = false;
@@ -651,10 +659,23 @@
     }
   }
 
-  async function fetchWithoutTyping(url, options) {
-    const resp = await fetch(url, options);
-    return await resp.json();
+  async function fetchWithoutTyping(url, options, retries = 5, delay = 100) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const resp = await fetch(url, options);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      return await resp.json();
+    } catch (err) {
+      if (attempt === retries) {
+        // last attempt, re‑throw
+        throw err;
+      }
+      // otherwise wait and retry
+      await new Promise(res => setTimeout(res, delay));
+    }
   }
+}
+
 
   async function handleFeedback(feedbackValue) {
     waitingForFeedback = false;
