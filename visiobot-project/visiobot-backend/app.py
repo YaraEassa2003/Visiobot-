@@ -20,7 +20,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(32)
-CORS(app, resources={r"/*": {"origins": "*"}}, allow_headers=["Content-Type", "Authorization"], supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": "*"}})
 global_data = {
     "dataset_info": None,
     "dataset_uploaded": False,
@@ -123,33 +123,34 @@ def get_visualization():
 
 @app.route("/next-visualization", methods=["POST"])
 def next_visualization():
-    """Route to handle user feedback and possibly move to the next best chart."""
-    user_feedback = request.json.get("feedback", "").lower()
+    try:
+        user_feedback = request.json.get("feedback", "").lower()
 
-    if "recommendation_queue" not in global_data or global_data["recommendation_queue"] is None:
-        return jsonify({"error": "No recommendation process in progress. Please start over."}), 400
+        if "recommendation_queue" not in global_data or global_data["recommendation_queue"] is None:
+            return jsonify({"error": "No recommendation process in progress. Please start over."}), 200  # CHANGED
 
-    if "current_index" not in global_data:
-        return jsonify({"error": "Missing current index in global_data."}), 400
+        if "current_index" not in global_data:
+            return jsonify({"error": "Missing current index in global_data."}), 200  # CHANGED
 
-    if user_feedback == "yes":
-        chart_name, _ = global_data["recommendation_queue"][global_data["current_index"]]
-        global_data["final_chart_type"] = chart_name 
-        try:
-            return get_dataset_columns() 
-        except Exception as e:
-            return jsonify({"error": f"Failed during final step: {str(e)}"}), 500
+        if user_feedback == "yes":
+            chart_name, _ = global_data["recommendation_queue"][global_data["current_index"]]
+            global_data["final_chart_type"] = chart_name
+            return get_dataset_columns()  # this already returns 200
+        elif user_feedback == "no":
+            global_data["current_index"] += 1
+            if global_data["current_index"] >= len(global_data["recommendation_queue"]):
+                return jsonify({"message": "No more visualization options are left.", "ask_restart": "Would you like to start over with a new dataset? (Yes/No)"}), 200  # CHANGED
+            response_data = send_current_recommendation(global_data["full_user_input"], as_dict=True)
+            return jsonify(response_data), 200  # CHANGED
 
-    elif user_feedback == "no":
-        global_data["current_index"] += 1
-        if global_data["current_index"] >= len(global_data["recommendation_queue"]):
-            return jsonify({
-                "message": "No more visualization options are left."
-            })
-        response_data = send_current_recommendation(global_data["full_user_input"], as_dict=True)
+        return jsonify({"error": "Invalid feedback. Please respond with 'yes' or 'no'."}), 200  # CHANGED
 
-        return jsonify(response_data)
-    return jsonify({"error": "Invalid feedback. Please respond with 'yes' or 'no'."}), 400
+    except Exception as e:
+        # CHANGED: always return JSON 200 so fetch().json() never throws
+        return jsonify({
+            "error": f"Next‑visualization error: {str(e)}",
+            "ask_restart": "Would you like to restart? (Yes/No)"
+        }), 200
 
 def send_current_recommendation(user_input, as_dict=False):
     current_index = global_data["current_index"]
@@ -311,11 +312,19 @@ def final_plot():
         except json.JSONDecodeError:
             return jsonify({"error": "Failed to parse JSON from GPT's response."}), 500
 
+        raw_x = parsed.get("x_axis", "")
+        raw_y = parsed.get("y_axis", "")
+        col_map = {col.lower(): col for col in df.columns}
+        x_axis = col_map.get(raw_x.lower(), raw_x)   # CHANGED
+        y_axis = col_map.get(raw_y.lower(), raw_y)   # CHANGED
+        # ────────────────────────────────────────────────
         chart_type_key = parsed.get("chart_type", "").lower()
+        feature_cols = parsed.get("feature_columns", [])    # will be [] if not parallel
+        class_col    = parsed.get("class_column", None)     # will be None if not parallel
         used_cols_str = ""
         subset_summary = ""
 
-        if chart_type_key == "parallel":
+        if chart_type_key == "parallel" or "parallel" in final_chart_type.lower():
             feature_cols = parsed.get("feature_columns", [])
             class_col = parsed.get("class_column")
             if not feature_cols or not class_col:
@@ -349,26 +358,27 @@ def final_plot():
             subset_summary = subset_df.describe().to_string()
 
             # --- TAILORED MESSAGE SECTION ---
-        chart = final_chart_type.lower()
-        if "histogram" in chart:
+        ctl = final_chart_type.lower()
+        if "histogram" in ctl:
             msg = f"Here is your Histogram of {x_axis} showing its frequency distribution."
-        elif "pie" in chart:
+        elif "pie" in ctl:
             msg = f"Here is your Pie Chart showing how the parts of {x_axis} make up the whole."
-        elif "line" in chart:
+        elif "line" in ctl:
             msg = f"Here is your Line Chart of {y_axis} over {x_axis} to illustrate the trend."
-        elif "scatter" in chart:
+        elif "scatter" in ctl:
             msg = f"Here is your Scatter Plot comparing {y_axis} against {x_axis}."
-        elif "treemap" in chart:
+        elif "treemap" in ctl:
             msg = f"Here is your Treemap of {y_axis} by {x_axis}."
-        elif "map" in chart:
+        elif "map" in ctl:
             msg = f"Here is your Map of {y_axis} across {x_axis}."
-        elif "linked" in chart:
+        elif "linked" in ctl:
             msg = f"Here is your Linked Graph connecting each {x_axis} to {y_axis}."
-        elif "parallel" in chart:
+        elif "parallel" in ctl:
             feat_list = ", ".join(feature_cols)
             msg = f"Here is your Parallel Coordinates chart comparing {feat_list} grouped by {class_col}."
         else:
             msg = f"Here is your {final_chart_type} using {used_cols_str}."
+        # --- END TAILORED MESSAGE SECTION ---
         # --- END TAILORED MESSAGE SECTION ---
 
         explanation_prompt = f"""
@@ -400,8 +410,11 @@ Use direct, confident language (e.g., "The plot shows..."), and do not mention c
 
 
     except Exception as e:
-        return jsonify({"error": f"Failed to generate final plot: {str(e)}"}), 500
-
+        return jsonify({
+            "error": f"Final‑plot error: {str(e)}",
+            "ask_restart": "Would you like to try again? (Yes/No)"
+        }), 200
+    
 @app.route("/reuse-dataset", methods=["POST"])
 def reuse_dataset():
     """
