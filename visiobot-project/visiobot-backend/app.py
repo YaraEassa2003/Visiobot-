@@ -13,14 +13,26 @@ import re
 import time
 import json
 from dateutil.relativedelta import relativedelta 
-
+from flask import send_from_directory
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(32)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(
+    app,
+    resources={r"/*": {"origins": "*"}},
+    expose_headers=["Content-Disposition"],   # let the browser read it
+    allow_headers=["Content-Type"],           # allow JSON POSTs
+) 
+
+@app.after_request
+def enforce_utf8(resp):
+    # add the charset only for textual responses
+    if resp.mimetype.startswith(("application/json", "text/")):
+        resp.headers["Content-Type"] = f"{resp.mimetype}; charset=utf-8"
+    return resp
+
 global_data = {
     "dataset_info": None,
     "dataset_uploaded": False,
@@ -28,10 +40,26 @@ global_data = {
     "recommendation_queue": None,  
     "current_index": 0
 }
+
+
+
 UPLOAD_FOLDER = "/workspaces/codespaces-models/visiobot-project/visiobot-backend/uploads"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
+# ── NEW route, place it near /plot.png ─────────────────────────────────────────
+@app.route("/download-plot")
+def download_plot():
+    """Send the latest generated plot *as an attachment* so the browser shows
+    the normal ‘Save as…’ dialogue."""
+    path = os.path.join(BASE_DIR, "generated_plots",
+                        "generated_visualization.png")
+    return send_file(
+        path,
+        mimetype="image/png",
+        as_attachment=True,              # 👈 triggers download
+        download_name="visualization.png"
+    )
 
 @app.route("/", methods=["GET"])
 def home():
@@ -289,7 +317,7 @@ def final_plot():
                     print(f"UPDATE: Data filtered by last {num} {unit} using date column '{date_col}'.")
         all_columns = list(df.columns)
 
-        prompt = (
+        prompt =  (
             "Return only valid JSON. No extra text.\n"
             f"Columns: {', '.join(all_columns)}.\n"
             f"User wants: '{user_request}'.\n"
@@ -312,13 +340,13 @@ def final_plot():
         except json.JSONDecodeError:
             return jsonify({"error": "Failed to parse JSON from GPT's response."}), 500
 
-        raw_x = parsed.get("x_axis", "")
-        raw_y = parsed.get("y_axis", "")
+        raw_x = (parsed.get("x_axis") or "").strip()
+        raw_y = parsed.get("y_axis") or raw_x
         col_map = {col.lower(): col for col in df.columns}
         x_axis = col_map.get(raw_x.lower(), raw_x)   # CHANGED
         y_axis = col_map.get(raw_y.lower(), raw_y)   # CHANGED
         # ────────────────────────────────────────────────
-        chart_type_key = parsed.get("chart_type", "").lower()
+        chart_type_key = (parsed.get("chart_type") or "").lower()
         feature_cols = parsed.get("feature_columns", [])    # will be [] if not parallel
         class_col    = parsed.get("class_column", None)     # will be None if not parallel
         used_cols_str = ""
@@ -347,18 +375,26 @@ def final_plot():
             else:
                 subset_summary = "No numeric columns in feature_columns."
         else:
-            x_axis = parsed.get("x_axis")
+            # get whatever GPT returned (may be None for y_axis)
+            x_axis = parsed.get("x_axis") or ""
             y_axis = parsed.get("y_axis")
-            if not x_axis or not y_axis:
+
+            # histograms & pies only need one axis → reuse x_axis
+            if "histogram" in final_chart_type.lower() or "pie" in final_chart_type.lower():
+                y_axis = x_axis
+            # everything else still requires both
+            elif not x_axis or not y_axis:
                 return jsonify({"error": "GPT JSON missing x_axis or y_axis."}), 500
 
+            # now safe to plot
             plot_path = model_utils.generate_final_plot(df, x_axis, y_axis, final_chart_type)
             used_cols_str = f"X-axis: {x_axis}, Y-axis: {y_axis}"
             subset_df = df[[x_axis, y_axis]].copy()
             subset_summary = subset_df.describe().to_string()
 
+
             # --- TAILORED MESSAGE SECTION ---
-        ctl = final_chart_type.lower()
+        ctl = (final_chart_type or "").lower()
         if "histogram" in ctl:
             msg = f"Here is your Histogram of {x_axis} showing its frequency distribution."
         elif "pie" in ctl:
