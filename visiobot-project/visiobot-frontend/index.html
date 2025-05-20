@@ -401,22 +401,7 @@
     }
   }
 
-  async function forceDownloadImage(url, filename) {
-    try {
-      const resp = await fetch(url, { mode: "cors" });
-      const blob = await resp.blob();
-      const objectURL = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = objectURL;
-      link.download = filename || "visualization.png";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(objectURL);
-    } catch (err) {
-      console.error("Download failed:", err);
-    }
-  }
+  
 
   function flushPendingAfterImage() {
   pendingAfterImageContent.forEach((htmlSnippet) => {
@@ -451,19 +436,18 @@
     };
     container.appendChild(img);
 
-    const downloadBtn = document.createElement("button");
-    downloadBtn.className = "download-icon";
-    downloadBtn.title = "Download Visualization";
-    downloadBtn.onclick = function() {
-      forceDownloadImage(plotUrl, safeFilename);
-    };
-    downloadBtn.innerHTML = `
+    const downloadLink = document.createElement("a");
+    downloadLink.className = "download-icon";
+    downloadLink.title = "Download Visualization";
+    downloadLink.href = "https://cautious-space-train-wrgx7wx5j7g6fv6xr-5000.app.github.dev/download-plot";
+    downloadLink.setAttribute("download", safeFilename);
+    downloadLink.innerHTML = `
       <svg viewBox="0 0 24 24">
         <path d="M19 9h-4V3H9v6H5l7 7 7-7z" />
         <path d="M5 18h14v2H5z" />
       </svg>
     `;
-    container.appendChild(downloadBtn);
+    container.appendChild(downloadLink);
 
     chatbox.appendChild(container);
     scrollToBottom();
@@ -642,13 +626,13 @@
           pendingAfterImageContent.push(`<p class="bot-message">${data.plot_description}</p>`);
         }
         if (data.ask_reuse) {
-          pendingAfterImageContent.push(`<p class="bot-message">${data.ask_reuse}</p>`);
-          waitingForReuse = true;
-        }
-        else if (data.ask_restart) {
-          pendingAfterImageContent.push(`<p class="bot-message">${data.ask_restart}</p>`);
-          waitingForRestart = true;
-        }
+  pendingAfterImageContent.push(`<p class="bot-message">${data.ask_reuse}</p>`);
+  waitingForReuse = true;
+}
+else if (data.ask_restart) {
+  pendingAfterImageContent.push(`<p class="bot-message">${data.ask_restart}</p>`);
+  waitingForRestart = true;
+}
         if (!data.plot_url) {
           flushPendingAfterImage();
         }
