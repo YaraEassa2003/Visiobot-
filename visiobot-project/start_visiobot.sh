@@ -1,12 +1,8 @@
-#cd /workspaces/codespaces-models/visiobot-project/visiobot-backend
-#cd /workspaces/codespaces-models/visiobot-project/visiobot-frontend
-#chmod +x start_visiobot.sh --> to make the file executable                                       
-#sudo apt update && sudo apt install tmux -y --> to install tmux
+#To Run:
+#cd /workspaces/codespaces-models/visiobot-project
 #./start_visiobot.sh --> to run the script     
 # sudo kill -9 $(lsof -t -i:5000) --> to kill the process running on port 5000                                   
 # sudo kill -9 $(lsof -t -i:8000) --> to kill the process running on port 8000          
-
-#!/bin/bash
 
 echo "Checking if tmux is installed..."
 if ! command -v tmux &> /dev/null; then
