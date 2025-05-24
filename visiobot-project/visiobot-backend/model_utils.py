@@ -100,10 +100,7 @@ def get_prediction(user_input):
     print(f"🏆 Ranked Predictions: {ranked_visualizations}") 
 
     visualization_plot = generate_visualization(ranked_indices[0] + 1)
-
     return ranked_visualizations, visualization_plot 
-
-
 
 def generate_visualization(chart_type):
     """
@@ -447,8 +444,6 @@ def generate_final_plot(df, x_axis, y_axis, chart_type, feature_columns=None, cl
     plt.close()
     return plot_path
 
-import gpt_gateway
-
 def normalize_target_audience(input_str):
     """Normalize input to either 'Expert' or 'Non-Expert'."""
     lower_input = input_str.lower().replace("-", " ").strip()
@@ -520,7 +515,8 @@ def classify_purpose_with_gpt_fallback(input_str):
         return input_str.lower()
 
     return response
-#define test cases
+
+#Test cases
 test_cases = [
     {
         "Data_Dimensions": "1D",
@@ -588,15 +584,12 @@ test_cases = [
     }
 ]
 
-# Run predictions
 predictions = []
 for idx, test_case in enumerate(test_cases):
     prediction, top_3 = get_prediction(test_case)
     predictions.append((f"Case {idx+1}", prediction, top_3))
-    print(f"Case {idx+1} - Predicted: {prediction}, Top 3: {top_3}\n")  # Display inline
-    # Optionally: call your plot function here if not in get_prediction()
+    print(f"Case {idx+1} - Predicted: {prediction}, Top 3: {top_3}\n")  
 
-# Convert to DataFrame for tabular view
 df_results = pd.DataFrame(predictions, columns=["Case", "Predicted Chart", "Top 3 Predictions"])
 
 print(df_results)

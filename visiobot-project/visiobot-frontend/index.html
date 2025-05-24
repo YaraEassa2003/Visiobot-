@@ -314,7 +314,6 @@
 <body>
 
 <div id="chat-container">
-
   <button id="refresh-button" class="header-btn" onclick="refreshPage()">
     <svg viewBox="0 0 24 24">
       <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 .34-.03.67-.08 1h2.02c.05-.33.06-.66.06-1 0-4.42-3.58-8-8-8zm-6 7c0-.34.03-.67.08-1H4.06c-.05.33-.06.66-.06 1 0 4.42 3.58 8 8 8v3l4-4-4-4v3c-3.31 0-6-2.69-6-6z" fill="white"/>
@@ -549,17 +548,14 @@
       const resp = await fetch(url, options);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
-      // keep the little “thinking…” pause you had
       await new Promise(res => setTimeout(res, 500));
       removeTypingIndicator();
       return data;
     } catch (err) {
       if (attempt === retries) {
-        // last attempt: clean up and re‑throw
         removeTypingIndicator();
         throw err;
       }
-      // otherwise wait a bit and retry
       await new Promise(res => setTimeout(res, retryDelay));
     }
   }
@@ -626,9 +622,9 @@
           pendingAfterImageContent.push(`<p class="bot-message">${data.plot_description}</p>`);
         }
         if (data.ask_reuse) {
-  pendingAfterImageContent.push(`<p class="bot-message">${data.ask_reuse}</p>`);
-  waitingForReuse = true;
-}
+          pendingAfterImageContent.push(`<p class="bot-message">${data.ask_reuse}</p>`);
+          waitingForReuse = true;
+      }
 else if (data.ask_restart) {
   pendingAfterImageContent.push(`<p class="bot-message">${data.ask_restart}</p>`);
   waitingForRestart = true;
@@ -651,10 +647,8 @@ else if (data.ask_restart) {
       return await resp.json();
     } catch (err) {
       if (attempt === retries) {
-        // last attempt, re‑throw
         throw err;
       }
-      // otherwise wait and retry
       await new Promise(res => setTimeout(res, delay));
     }
   }

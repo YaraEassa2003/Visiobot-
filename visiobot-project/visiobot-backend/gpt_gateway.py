@@ -1,9 +1,3 @@
-#mine--> export GITHUB_TOKEN="ghu_PkF1iefM5TsWdo2SL83ycXy6s0iq0t2gtJMv"
-#echo "$GITHUB_TOKEN"
-
-#export GITHUB_TOKEN="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"
-#echo "$GITHUB_TOKEN"
-
 import os
 from openai import OpenAI
 from dotenv import load_dotenv

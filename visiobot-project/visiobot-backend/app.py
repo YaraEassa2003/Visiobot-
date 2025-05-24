@@ -3,17 +3,12 @@ import model_utils
 import dataset_utils
 import gpt_gateway
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import secrets
 from flask import send_file
-import re
 import time
 import json
-from dateutil.relativedelta import relativedelta 
-from flask import send_from_directory
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -22,13 +17,12 @@ app.secret_key = secrets.token_hex(32)
 CORS(
     app,
     resources={r"/*": {"origins": "*"}},
-    expose_headers=["Content-Disposition"],   # let the browser read it
-    allow_headers=["Content-Type"],           # allow JSON POSTs
+    expose_headers=["Content-Disposition"],  
+    allow_headers=["Content-Type"],           
 ) 
 
 @app.after_request
 def enforce_utf8(resp):
-    # add the charset only for textual responses
     if resp.mimetype.startswith(("application/json", "text/")):
         resp.headers["Content-Type"] = f"{resp.mimetype}; charset=utf-8"
     return resp
@@ -41,13 +35,10 @@ global_data = {
     "current_index": 0
 }
 
-
-
 UPLOAD_FOLDER = "/workspaces/codespaces-models/visiobot-project/visiobot-backend/uploads"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-# ── NEW route, place it near /plot.png ─────────────────────────────────────────
 @app.route("/download-plot")
 def download_plot():
     """Send the latest generated plot *as an attachment* so the browser shows
@@ -57,7 +48,7 @@ def download_plot():
     return send_file(
         path,
         mimetype="image/png",
-        as_attachment=True,              # 👈 triggers download
+        as_attachment=True,             
         download_name="visualization.png"
     )
 
@@ -93,8 +84,8 @@ def process_dataset():
         global_data["dataset_uploaded"] = True
         global_data["dataset_path"] = file_path
 
-        print(f"✅ Dataset saved at: {file_path}")
-        print("✅ Dataset info stored:", global_data["dataset_info"])
+        print(f"Dataset saved at: {file_path}")
+        print("Dataset info stored:", global_data["dataset_info"])
 
     except Exception as e:
         return jsonify({"error": f"Dataset processing failed: {str(e)}"}), 500
@@ -155,26 +146,25 @@ def next_visualization():
         user_feedback = request.json.get("feedback", "").lower()
 
         if "recommendation_queue" not in global_data or global_data["recommendation_queue"] is None:
-            return jsonify({"error": "No recommendation process in progress. Please start over."}), 200  # CHANGED
+            return jsonify({"error": "No recommendation process in progress. Please start over."}), 200  
 
         if "current_index" not in global_data:
-            return jsonify({"error": "Missing current index in global_data."}), 200  # CHANGED
+            return jsonify({"error": "Missing current index in global_data."}), 200  
 
         if user_feedback == "yes":
             chart_name, _ = global_data["recommendation_queue"][global_data["current_index"]]
             global_data["final_chart_type"] = chart_name
-            return get_dataset_columns()  # this already returns 200
+            return get_dataset_columns()  
         elif user_feedback == "no":
             global_data["current_index"] += 1
             if global_data["current_index"] >= len(global_data["recommendation_queue"]):
-                return jsonify({"message": "No more visualization options are left.", "ask_restart": "Would you like to start over with a new dataset? (Yes/No)"}), 200  # CHANGED
+                return jsonify({"message": "No more visualization options are left.", "ask_restart": "Would you like to start over with a new dataset? (Yes/No)"}), 200  
             response_data = send_current_recommendation(global_data["full_user_input"], as_dict=True)
-            return jsonify(response_data), 200  # CHANGED
+            return jsonify(response_data), 200  
 
-        return jsonify({"error": "Invalid feedback. Please respond with 'yes' or 'no'."}), 200  # CHANGED
+        return jsonify({"error": "Invalid feedback. Please respond with 'yes' or 'no'."}), 200  
 
     except Exception as e:
-        # CHANGED: always return JSON 200 so fetch().json() never throws
         return jsonify({
             "error": f"Next‑visualization error: {str(e)}",
             "ask_restart": "Would you like to restart? (Yes/No)"
@@ -328,7 +318,7 @@ def final_plot():
         )
 
         gpt_response = gpt_gateway.handle_chat(prompt)
-        print("🧠 GPT raw response:", repr(gpt_response))
+        print("GPT raw response:", repr(gpt_response))
 
         match = re.search(r"\{.*?\}", gpt_response, re.DOTALL)
         if not match:
@@ -343,12 +333,11 @@ def final_plot():
         raw_x = (parsed.get("x_axis") or "").strip()
         raw_y = parsed.get("y_axis") or raw_x
         col_map = {col.lower(): col for col in df.columns}
-        x_axis = col_map.get(raw_x.lower(), raw_x)   # CHANGED
-        y_axis = col_map.get(raw_y.lower(), raw_y)   # CHANGED
-        # ────────────────────────────────────────────────
+        x_axis = col_map.get(raw_x.lower(), raw_x)   
+        y_axis = col_map.get(raw_y.lower(), raw_y)   
         chart_type_key = (parsed.get("chart_type") or "").lower()
-        feature_cols = parsed.get("feature_columns", [])    # will be [] if not parallel
-        class_col    = parsed.get("class_column", None)     # will be None if not parallel
+        feature_cols = parsed.get("feature_columns", [])    
+        class_col    = parsed.get("class_column", None)    
         used_cols_str = ""
         subset_summary = ""
 
@@ -375,25 +364,20 @@ def final_plot():
             else:
                 subset_summary = "No numeric columns in feature_columns."
         else:
-            # get whatever GPT returned (may be None for y_axis)
             x_axis = parsed.get("x_axis") or ""
             y_axis = parsed.get("y_axis")
 
-            # histograms & pies only need one axis → reuse x_axis
             if "histogram" in final_chart_type.lower():
                 y_axis = x_axis
-            # everything else still requires both
             elif not x_axis or not y_axis:
                 return jsonify({"error": "GPT JSON missing x_axis or y_axis."}), 500
 
-            # now safe to plot
             plot_path = model_utils.generate_final_plot(df, x_axis, y_axis, final_chart_type)
             used_cols_str = f"X-axis: {x_axis}, Y-axis: {y_axis}"
             subset_df = df[[x_axis, y_axis]].copy()
             subset_summary = subset_df.describe().to_string()
 
 
-            # --- TAILORED MESSAGE SECTION ---
         ctl = (final_chart_type or "").lower()
         if "histogram" in ctl:
             msg = f"Here is your Histogram of {x_axis} showing its frequency distribution."
@@ -414,18 +398,16 @@ def final_plot():
             msg = f"Here is your Parallel Coordinates chart comparing {feat_list} grouped by {class_col}."
         else:
             msg = f"Here is your {final_chart_type} using {used_cols_str}."
-        # --- END TAILORED MESSAGE SECTION ---
-        # --- END TAILORED MESSAGE SECTION ---
-
+        
         explanation_prompt = f"""
-You are a seasoned business intelligence analyst interpreting a '{final_chart_type}' 
-chart. The user specifically chose these columns: {used_cols_str}.
+        You are a seasoned business intelligence analyst interpreting a '{final_chart_type}' 
+        chart. The user specifically chose these columns: {used_cols_str}.
 
-Below is the summary of just those columns:
-{subset_summary}
+        Below is the summary of just those columns:
+        {subset_summary}
 
-In 2–3 sentences, state the most important insights that will impact business decisions. 
-Use direct, confident language (e.g., "The plot shows..."), and do not mention columns not shown here.
+        In 2–3 sentences, state the most important insights that will impact business decisions. 
+        Use direct, confident language (e.g., "The plot shows..."), and do not mention columns not shown here.
         """
 
         plot_description = gpt_gateway.handle_chat(explanation_prompt)
@@ -442,9 +424,6 @@ Use direct, confident language (e.g., "The plot shows..."), and do not mention c
             "ask_reuse": "Would you like to visualize something else using this same dataset, purpose, and audience preferences? (Yes/No)"
         })
     
-
-
-
     except Exception as e:
         return jsonify({
             "error": f"Final‑plot error: {str(e)}",

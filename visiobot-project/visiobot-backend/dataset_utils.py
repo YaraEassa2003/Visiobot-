@@ -29,7 +29,7 @@ def determine_dimension(data, df=None, ask_gpt_for_hierarchy=False):
         dimension = "Unknown"
 
     if ask_gpt_for_hierarchy and df is not None and (dimension == "ND" or dimension == "2D" and len(df.columns) >= 3): 
-        if is_one_to_many_hierarchy(df):       # Summarize CSV structure for GPT:
+        if is_one_to_many_hierarchy(df):      
             print("[DEBUG] Invoking maybe_refine_to_hierarchical_with_gpt()...")
             dimension_before = dimension
             dimension = maybe_refine_to_hierarchical_with_gpt(dimension, df)
@@ -52,9 +52,6 @@ def is_one_to_many_hierarchy(df):
         if df[col].duplicated().any():
             return True
     return False
-
-
-
 
 def maybe_refine_to_hierarchical_with_gpt(current_dimension, df):
     """
@@ -124,8 +121,6 @@ def is_truly_ordinal(series, threshold=10, tolerance=1e-6):
     
     return False
 
-import pandas as pd
-import numpy as np
 
 def detect_primary_variable(df):
     """
@@ -137,11 +132,9 @@ def detect_primary_variable(df):
 
     for col in df.columns:
         series = df[col]
-        # 1) If it’s already datetime64 OR name contains "date" → time
         if pd.api.types.is_datetime64_any_dtype(series) or "date" in col.lower():
             feature_types[col] = "time"
 
-        # 2) Strings: try parsing any as dates, else geo-hint, else categorical
         elif pd.api.types.is_string_dtype(series):
             parsed = pd.to_datetime(series, errors="coerce")
             if parsed.notna().any():
@@ -152,9 +145,7 @@ def detect_primary_variable(df):
             else:
                 feature_types[col] = "categorical"
 
-        # 3) Numbers: ordinal if small set of evenly spaced ints, else continuous
         elif pd.api.types.is_numeric_dtype(series):
-            # reuse your is_truly_ordinal helper here
             if is_truly_ordinal(series):
                 feature_types[col] = "ordinal"
             else:
@@ -163,11 +154,8 @@ def detect_primary_variable(df):
         else:
             feature_types[col] = "other"
 
-    # Choose the column with max unique values as “primary”
     primary_var = max(feature_types, key=lambda c: df[c].nunique(), default=None)
     primary_type = feature_types.get(primary_var, "unknown")
-
-    # finally, treat time as continuous for your pipeline
     if primary_type == "time":
         primary_type = "continuous"
 
@@ -178,8 +166,6 @@ def extract_dataset_info(file_path, use_gpt_for_hierarchy=False):
     """Extracts dataset properties as required by the trained model."""
     cols = pd.read_csv(file_path, nrows=0).columns.tolist()
     date_cols = [c for c in cols if "date" in c.lower()]
-
-    # 2) load CSV, parsing those date columns if any
     if date_cols:
         df = pd.read_csv(file_path, parse_dates=date_cols)
     else:
