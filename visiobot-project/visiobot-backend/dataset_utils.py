@@ -93,8 +93,6 @@ def maybe_refine_to_hierarchical_with_gpt(current_dimension, df):
     except Exception as e:
         print(f"GPT error: {e}")
         return current_dimension
-import numpy as np
-import pandas as pd
 
 def is_truly_ordinal(series, threshold=10, tolerance=1e-6):
     """
@@ -126,48 +124,66 @@ def is_truly_ordinal(series, threshold=10, tolerance=1e-6):
     
     return False
 
+import pandas as pd
+import numpy as np
+
 def detect_primary_variable(df):
     """
-    Determines the primary variable type in the dataset by analyzing feature types.
-    Categories: ordinal, categorical, continuous, geographical, time, or other.
+    Determines the primary variable (column with highest cardinality)
+    and classifies its type as one of:
+      ordinal, categorical, continuous, geographical, or time.
     """
     feature_types = {}
 
     for col in df.columns:
-        unique_values = df[col].nunique()
-        dtype = df[col].dtype
+        series = df[col]
+        # 1) If it’s already datetime64 OR name contains "date" → time
+        if pd.api.types.is_datetime64_any_dtype(series) or "date" in col.lower():
+            feature_types[col] = "time"
 
-        if pd.api.types.is_string_dtype(df[col]):
-            try:
-                parsed_dates = pd.to_datetime(df[col], errors="coerce")
-                if parsed_dates.notna().sum() / len(parsed_dates) > 0.8:
-                    feature_types[col] = "time"
-                else:
-                    if any(keyword in col.lower() for keyword in ["country", "state", "city", "region", "latitude", "longitude"]):
-                        feature_types[col] = "geographical"
-                    else:
-                        feature_types[col] = "categorical"
-            except Exception:
+        # 2) Strings: try parsing any as dates, else geo-hint, else categorical
+        elif pd.api.types.is_string_dtype(series):
+            parsed = pd.to_datetime(series, errors="coerce")
+            if parsed.notna().any():
+                feature_types[col] = "time"
+            elif any(k in col.lower() for k in
+                     ["country", "state", "city", "region", "latitude", "longitude"]):
+                feature_types[col] = "geographical"
+            else:
                 feature_types[col] = "categorical"
-        elif pd.api.types.is_numeric_dtype(df[col]):
-            if is_truly_ordinal(df[col]):
+
+        # 3) Numbers: ordinal if small set of evenly spaced ints, else continuous
+        elif pd.api.types.is_numeric_dtype(series):
+            # reuse your is_truly_ordinal helper here
+            if is_truly_ordinal(series):
                 feature_types[col] = "ordinal"
             else:
                 feature_types[col] = "continuous"
-        elif pd.api.types.is_datetime64_any_dtype(df[col]):
-            feature_types[col] = "time"
+
         else:
             feature_types[col] = "other"
 
-    primary_variable = max(feature_types, key=lambda x: df[x].nunique(), default=None)
-    primary_type = feature_types.get(primary_variable, "unknown")
+    # Choose the column with max unique values as “primary”
+    primary_var = max(feature_types, key=lambda c: df[c].nunique(), default=None)
+    primary_type = feature_types.get(primary_var, "unknown")
+
+    # finally, treat time as continuous for your pipeline
     if primary_type == "time":
         primary_type = "continuous"
-    return primary_variable, primary_type
+
+    return primary_var, primary_type
+
 
 def extract_dataset_info(file_path, use_gpt_for_hierarchy=False):
     """Extracts dataset properties as required by the trained model."""
-    df = pd.read_csv(file_path)
+    cols = pd.read_csv(file_path, nrows=0).columns.tolist()
+    date_cols = [c for c in cols if "date" in c.lower()]
+
+    # 2) load CSV, parsing those date columns if any
+    if date_cols:
+        df = pd.read_csv(file_path, parse_dates=date_cols)
+    else:
+        df = pd.read_csv(file_path)
 
     data_dimensions = determine_dimension(
         df.to_numpy(),

@@ -380,7 +380,7 @@ def final_plot():
             y_axis = parsed.get("y_axis")
 
             # histograms & pies only need one axis → reuse x_axis
-            if "histogram" in final_chart_type.lower() or "pie" in final_chart_type.lower():
+            if "histogram" in final_chart_type.lower():
                 y_axis = x_axis
             # everything else still requires both
             elif not x_axis or not y_axis:

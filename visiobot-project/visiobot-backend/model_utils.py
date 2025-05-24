@@ -520,5 +520,83 @@ def classify_purpose_with_gpt_fallback(input_str):
         return input_str.lower()
 
     return response
+#define test cases
+test_cases = [
+    {
+        "Data_Dimensions": "1D",
+        "No_of_Attributes": 1,
+        "No_of_Records": 20,
+        "Primary_Variable (Data Type)": "categorical",
+        "Task (Purpose)": "distribution",
+        "Target Audience": "Non-Expert"
+    },
+    {
+        "Data_Dimensions": "Hierarchical",
+        "No_of_Attributes": 10,
+        "No_of_Records": 500,
+        "Primary_Variable (Data Type)": "categorical",
+        "Task (Purpose)": "trends",
+        "Target Audience": "Expert"
+    },
+    {
+        "Data_Dimensions": "1D",
+        "No_of_Attributes": 2,
+        "No_of_Records": 150,
+        "Primary_Variable (Data Type)": "continuous",
+        "Task (Purpose)": "distribution",
+        "Target Audience": "Non-Expert"
+    },
+    {
+        "Data_Dimensions": "ND",
+        "No_of_Attributes": 5,
+        "No_of_Records": 750,
+        "Primary_Variable (Data Type)": "continuous",
+        "Task (Purpose)": "comparison",
+        "Target Audience": "Expert"
+    },
+    {
+        "Data_Dimensions": "2D",
+        "No_of_Attributes": 7,
+        "No_of_Records": 350,
+        "Primary_Variable (Data Type)": "ordinal",
+        "Task (Purpose)": "comparison",
+        "Target Audience": "Expert"
+    },
+    {
+        "Data_Dimensions": "1D",
+        "No_of_Attributes": 3,
+        "No_of_Records": 300,
+        "Primary_Variable (Data Type)": "continuous",
+        "Task (Purpose)": "relationship",
+        "Target Audience": "Non-Expert"
+    },
+    {
+        "Data_Dimensions": "1D",
+        "No_of_Attributes": 1,
+        "No_of_Records": 35,
+        "Primary_Variable (Data Type)": "ordinal",
+        "Task (Purpose)": "trends",
+        "Target Audience": "Non-Expert"
+    },
+    {
+        "Data_Dimensions": "1D",
+        "No_of_Attributes": 1,
+        "No_of_Records": 60,
+        "Primary_Variable (Data Type)": "geographical",
+        "Task (Purpose)": "distribution",
+        "Target Audience": "Expert"
+    }
+]
 
-# Define test cases
+# Run predictions
+predictions = []
+for idx, test_case in enumerate(test_cases):
+    prediction, top_3 = get_prediction(test_case)
+    predictions.append((f"Case {idx+1}", prediction, top_3))
+    print(f"Case {idx+1} - Predicted: {prediction}, Top 3: {top_3}\n")  # Display inline
+    # Optionally: call your plot function here if not in get_prediction()
+
+# Convert to DataFrame for tabular view
+df_results = pd.DataFrame(predictions, columns=["Case", "Predicted Chart", "Top 3 Predictions"])
+
+print(df_results)
